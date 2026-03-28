@@ -19,11 +19,17 @@ app.use(helmet({
 
 // CORS
 app.use(cors({
-  origin: (origin, callback) => callback(null, true), // allow all origins on Vercel
+  origin: (origin, callback) => callback(null, true),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'bypass-tunnel-reminder'],
 }));
+
+// Bypass localtunnel reminder page
+app.use((req, _res, next) => {
+  req.headers['bypass-tunnel-reminder'] = 'true';
+  next();
+});
 
 // Compression
 app.use(compression());

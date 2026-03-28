@@ -44,7 +44,28 @@
       "Bash(git --version)",
       "Bash(vercel whoami:*)",
       "Bash(vercel --yes --prod)",
-      "Bash(vercel --yes --prod --name sample-crm)"
+      "Bash(vercel --yes --prod --name sample-crm)",
+      "Bash(vercel storage:*)",
+      "Bash(vercel --help)",
+      "Read(//c/Users/ramak/Desktop/CRM/$HOME/.local/share/com.vercel.cli/**)",
+      "Bash(find /c/Users/ramak -name auth.json -path *vercel*)",
+      "Bash(find /c/Users/ramak -name *.json -path *vercel*)",
+      "Bash(vercel env:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''''$env:APPDATA'''' -Filter ''''*vercel*'''' -Recurse -ErrorAction SilentlyContinue | Select-Object FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path \"\"C:\\\\Users\\\\ramak\\\\AppData\"\" -Filter ''auth.json'' -Recurse -ErrorAction SilentlyContinue 2>&1 | Select-Object -First 5 FullName\")",
+      "Bash(xargs grep:*)",
+      "Bash(powershell -Command \":*)",
+      "Bash(vercel project:*)",
+      "Bash(vercel token:*)",
+      "Bash(vercel switch:*)",
+      "Bash(vercel secrets:*)",
+      "Bash(cmdkey /list)",
+      "Bash(node -e \":*)",
+      "Bash(find /c/Users/ramak/AppData -name *.db -o -name *.sqlite)",
+      "Bash(railway --version)",
+      "Bash(railway login:*)",
+      "Bash(ngrok --version)",
+      "Bash(grep -r \"credential\\\\|keychain\\\\|password\\\\|VERCEL_TOKEN\\\\|auth.*store\\\\|store.*auth\" C:/Users/ramak/AppData/Roaming/npm/node_modules/vercel/dist/ --include=*.js -l)"
     ]
   }
 }

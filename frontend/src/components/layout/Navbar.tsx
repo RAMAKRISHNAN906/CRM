@@ -5,8 +5,9 @@ import {
   Menu, Bell, Search, Sun, Moon, Plus, Command,
   UserPlus, Users, DollarSign, CheckSquare,
   Settings, LogOut, User, ChevronRight,
-  CheckCircle2, Clock, TrendingUp, AlertCircle, X,
+  CheckCircle2, Clock, TrendingUp, AlertCircle, X, Download,
 } from 'lucide-react';
+import { usePWA } from '../../hooks/usePWA';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../store/uiStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -64,6 +65,8 @@ export const Navbar: React.FC = () => {
   const { theme, setTheme } = useThemeStore();
   const { user }  = useAuthStore();
   const { logout } = useAuth();
+
+  const { installPrompt, isInstalled, install } = usePWA();
 
   const [searchOpen,  setSearchOpen]  = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -134,6 +137,23 @@ export const Navbar: React.FC = () => {
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
+        {/* Install app button */}
+        <AnimatePresence>
+          {installPrompt && !isInstalled && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              onClick={install}
+              title="Install app"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-accent-20 hover:bg-accent-30 text-accent-muted hover:text-accent-light border border-accent-20 transition-colors"
+            >
+              <Download size={13} />
+              <span className="hidden sm:block">Install</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         {/* Theme toggle */}
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}

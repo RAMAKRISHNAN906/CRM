@@ -6,7 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', 'bypass-tunnel-reminder': 'true' },
 });
 
 // Request interceptor - attach access token

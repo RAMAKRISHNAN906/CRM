@@ -65,7 +65,12 @@
       "Bash(railway --version)",
       "Bash(railway login:*)",
       "Bash(ngrok --version)",
-      "Bash(grep -r \"credential\\\\|keychain\\\\|password\\\\|VERCEL_TOKEN\\\\|auth.*store\\\\|store.*auth\" C:/Users/ramak/AppData/Roaming/npm/node_modules/vercel/dist/ --include=*.js -l)"
+      "Bash(grep -r \"credential\\\\|keychain\\\\|password\\\\|VERCEL_TOKEN\\\\|auth.*store\\\\|store.*auth\" C:/Users/ramak/AppData/Roaming/npm/node_modules/vercel/dist/ --include=*.js -l)",
+      "Bash(curl -s https://sample-crm-six.vercel.app/api/v1/health)",
+      "Bash(curl -s https://sample-crm-api.loca.lt/health)",
+      "Bash(curl -s -X POST https://sample-crm-api.loca.lt/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')",
+      "Bash(curl -s https://sample-crm-six.vercel.app/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')",
+      "Bash(curl -s -X POST https://sample-crm-api.loca.lt/api/v1/auth/login -H \"Content-Type: application/json\" -H \"Origin: https://sample-crm-six.vercel.app\" -H \"bypass-tunnel-reminder: true\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')"
     ]
   }
 }

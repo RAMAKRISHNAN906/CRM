@@ -137,22 +137,23 @@ export const Navbar: React.FC = () => {
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
-        {/* Install app button */}
-        <AnimatePresence>
-          {installPrompt && !isInstalled && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              onClick={install}
-              title="Install app"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-accent-20 hover:bg-accent-30 text-accent-muted hover:text-accent-light border border-accent-20 transition-colors"
-            >
-              <Download size={13} />
-              <span className="hidden sm:block">Install</span>
-            </motion.button>
-          )}
-        </AnimatePresence>
+        {/* Install app button - always visible unless already installed */}
+        {!isInstalled && (
+          <button
+            onClick={() => {
+              if (installPrompt) {
+                install();
+              } else {
+                alert('To install: click the install icon (⊕ or ↓) in your browser\'s address bar, or use browser menu → "Install app".');
+              }
+            }}
+            title="Install app"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-accent-20 hover:bg-accent-30 text-accent-muted hover:text-accent-light border border-accent-20 transition-colors"
+          >
+            <Download size={13} />
+            <span className="hidden sm:block">Install</span>
+          </button>
+        )}
 
         {/* Theme toggle */}
         <button

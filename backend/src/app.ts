@@ -19,7 +19,7 @@ app.use(helmet({
 
 // CORS
 app.use(cors({
-  origin: [config.clientUrl, 'http://localhost:5173', 'http://localhost:3000'],
+  origin: (origin, callback) => callback(null, true), // allow all origins on Vercel
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

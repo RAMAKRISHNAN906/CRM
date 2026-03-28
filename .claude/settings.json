@@ -41,7 +41,10 @@
       "Bash(curl -s http://localhost:5173)",
       "Bash(curl -s http://localhost:5000/api/v1/auth/me)",
       "Bash(vercel --version)",
-      "Bash(git --version)"
+      "Bash(git --version)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel --yes --prod)",
+      "Bash(vercel --yes --prod --name sample-crm)"
     ]
   }
 }

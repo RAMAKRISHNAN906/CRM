@@ -70,7 +70,13 @@
       "Bash(curl -s https://sample-crm-api.loca.lt/health)",
       "Bash(curl -s -X POST https://sample-crm-api.loca.lt/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')",
       "Bash(curl -s https://sample-crm-six.vercel.app/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')",
-      "Bash(curl -s -X POST https://sample-crm-api.loca.lt/api/v1/auth/login -H \"Content-Type: application/json\" -H \"Origin: https://sample-crm-six.vercel.app\" -H \"bypass-tunnel-reminder: true\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')"
+      "Bash(curl -s -X POST https://sample-crm-api.loca.lt/api/v1/auth/login -H \"Content-Type: application/json\" -H \"Origin: https://sample-crm-six.vercel.app\" -H \"bypass-tunnel-reminder: true\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')",
+      "Bash(curl -s -X POST https://sample-crm-six.vercel.app/api/v1/auth/login -H \"Content-Type: application/json\" -H \"bypass-tunnel-reminder: true\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')",
+      "Bash(vercel promote:*)",
+      "Bash(curl -s -X OPTIONS https://sample-crm-api.loca.lt/api/v1/auth/login -H \"Origin: https://sample-crm-six.vercel.app\" -H \"Access-Control-Request-Method: POST\" -H \"Access-Control-Request-Headers: content-type,bypass-tunnel-reminder\" -i)",
+      "Bash(find /c/Users/ramak -name cloudflared* -maxdepth 6)",
+      "Bash(CF_URL=\"https://dictionary-requires-retro-arrow.trycloudflare.com\")",
+      "Bash(curl -s \"$CF_URL/health\")"
     ]
   }
 }

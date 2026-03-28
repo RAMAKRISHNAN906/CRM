@@ -1,9 +1,50 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      manifest: {
+        name: 'NexusCRM - Customer Relationship Management',
+        short_name: 'NexusCRM',
+        description: 'Premium CRM platform for modern teams',
+        theme_color: '#7c3aed',
+        background_color: '#0a0a0b',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        scope: '/',
+        start_url: '/',
+        id: 'nexuscrm-v1',
+        icons: [
+          { src: '/pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+          { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+        categories: ['business', 'productivity'],
+        lang: 'en',
+        dir: 'ltr',
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.trycloudflare\.com\/api\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+            },
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
   },

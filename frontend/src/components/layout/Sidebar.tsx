@@ -47,8 +47,8 @@ export const Sidebar: React.FC = () => {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={cn('flex items-center gap-3 px-4 py-5 border-b border-border', sidebarCollapsed ? 'justify-center px-3' : '')}>
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-accent shrink-0 shadow-glow-accent">
-          <Sparkles size={18} className="text-white" />
+        <div className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0 overflow-hidden shadow-glow-accent">
+          <img src="/favicon.svg" alt="NexusCRM" className="w-full h-full" />
         </div>
         <AnimatePresence>
           {!sidebarCollapsed && (

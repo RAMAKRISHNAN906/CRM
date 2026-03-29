@@ -81,7 +81,10 @@
       "Bash(curl -s \"https://sample-crm-six.vercel.app\")",
       "Bash(curl -s -X OPTIONS \"https://dictionary-requires-retro-arrow.trycloudflare.com/api/v1/auth/login\" -H \"Origin: https://sample-crm-six.vercel.app\" -H \"Access-Control-Request-Method: POST\" -H \"Access-Control-Request-Headers: content-type,authorization\" -i)",
       "Bash(curl -s -I \"https://sample-crm-six.vercel.app/sw.js\")",
-      "Bash(curl -s https://served-donald-stats-reviews.trycloudflare.com/health)"
+      "Bash(curl -s https://served-donald-stats-reviews.trycloudflare.com/health)",
+      "Bash(NEON_URL=\"postgresql://neondb_owner:npg_dzXAYG5yDCN6@ep-winter-leaf-amdgv8af-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\")",
+      "Bash(DATABASE_URL=\"$NEON_URL\" npx prisma migrate deploy)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_dzXAYG5yDCN6@ep-winter-leaf-amdgv8af-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npx ts-node prisma/seed.ts)"
     ]
   }
 }

@@ -168,7 +168,7 @@ export const Navbar: React.FC = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ duration: 0.13 }}
-                className="absolute right-0 top-full mt-2 w-80 rounded-xl bg-surface-elevated border border-border shadow-modal z-50 overflow-hidden"
+                className="absolute right-0 top-full mt-2 w-screen sm:w-80 max-w-[calc(100vw-1rem)] rounded-xl bg-surface-elevated border border-border shadow-modal z-50 overflow-hidden"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border">

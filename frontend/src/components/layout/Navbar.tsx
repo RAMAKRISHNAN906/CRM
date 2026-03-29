@@ -163,78 +163,93 @@ export const Navbar: React.FC = () => {
 
           <AnimatePresence>
             {notifMenu.open && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                transition={{ duration: 0.13 }}
-                className="absolute right-0 top-full mt-2 w-screen sm:w-80 max-w-[calc(100vw-1rem)] rounded-xl bg-surface-elevated border border-border shadow-modal z-50 overflow-hidden"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white">Notifications</span>
-                    {unreadCount > 0 && (
-                      <span className="px-1.5 py-0.5 bg-accent-20 text-accent-muted text-xs font-medium rounded-full">
-                        {unreadCount} new
-                      </span>
+              <>
+                {/* Mobile: full-screen overlay backdrop */}
+                <div className="fixed inset-0 z-40 sm:hidden" onClick={() => notifMenu.setOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                  transition={{ duration: 0.13 }}
+                  className={cn(
+                    'z-50 bg-surface-elevated border border-border shadow-modal overflow-hidden',
+                    // Mobile: fixed full-width panel below header
+                    'fixed left-0 right-0 top-16 mx-3 rounded-xl sm:mx-0',
+                    // Desktop: absolute dropdown
+                    'sm:absolute sm:fixed-none sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80'
+                  )}
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-white">Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.5 bg-accent-20 text-accent-muted text-xs font-medium rounded-full">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button onClick={markAllRead} className="text-xs text-accent-muted hover:text-accent-light transition-colors">
+                          Mark all read
+                        </button>
+                      )}
+                      <button onClick={() => notifMenu.setOpen(false)} className="sm:hidden p-1 rounded hover:bg-white/10 text-gray-500">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* List */}
+                  <div className="max-h-[60vh] sm:max-h-[360px] overflow-y-auto divide-y divide-border/50">
+                    {notifications.length === 0 ? (
+                      <div className="py-10 text-center text-gray-500 text-sm">All caught up!</div>
+                    ) : (
+                      notifications.map((n) => {
+                        const Icon = n.icon;
+                        return (
+                          <div
+                            key={n.id}
+                            className={cn(
+                              'flex items-start gap-3 px-4 py-3 group transition-colors',
+                              !n.read ? 'bg-accent-10/50 hover:bg-accent-10' : 'hover:bg-white/5'
+                            )}
+                          >
+                            <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5', n.bg)}>
+                              <Icon size={14} className={n.color} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-medium text-white truncate">{n.title}</p>
+                                {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.body}</p>
+                              <p className="text-xs text-gray-600 mt-1">{n.time}</p>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); dismissNotif(n.id); }}
+                              className="p-1 rounded hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-all shrink-0"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
-                  {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-xs text-accent-muted hover:text-accent-light transition-colors">
-                      Mark all read
+
+                  {/* Footer */}
+                  <div className="px-4 py-2.5 border-t border-border">
+                    <button
+                      onClick={() => { notifMenu.setOpen(false); navigate('/settings'); }}
+                      className="w-full text-xs text-center text-accent-muted hover:text-accent-light transition-colors"
+                    >
+                      Notification settings
                     </button>
-                  )}
-                </div>
-
-                {/* List */}
-                <div className="max-h-[360px] overflow-y-auto divide-y divide-border/50">
-                  {notifications.length === 0 ? (
-                    <div className="py-10 text-center text-gray-500 text-sm">All caught up!</div>
-                  ) : (
-                    notifications.map((n) => {
-                      const Icon = n.icon;
-                      return (
-                        <div
-                          key={n.id}
-                          className={cn(
-                            'flex items-start gap-3 px-4 py-3 group transition-colors',
-                            !n.read ? 'bg-accent-10/50 hover:bg-accent-10' : 'hover:bg-white/5'
-                          )}
-                        >
-                          <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5', n.bg)}>
-                            <Icon size={14} className={n.color} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <p className="text-sm font-medium text-white truncate">{n.title}</p>
-                              {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{n.body}</p>
-                            <p className="text-xs text-gray-600 mt-1">{n.time}</p>
-                          </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); dismissNotif(n.id); }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/10 text-gray-500 hover:text-gray-300 transition-all shrink-0"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="px-4 py-2.5 border-t border-border">
-                  <button
-                    onClick={() => { notifMenu.setOpen(false); navigate('/settings'); }}
-                    className="w-full text-xs text-center text-accent-muted hover:text-accent-light transition-colors"
-                  >
-                    Notification settings
-                  </button>
-                </div>
-              </motion.div>
+                  </div>
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
         </div>

@@ -92,7 +92,8 @@
       "Bash(curl -s https://sample-crm-six.vercel.app/api/v1/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')",
       "Bash(curl -s https://sample-crm-six.vercel.app/)",
       "Bash(curl -s \"https://sample-crm-six.vercel.app/assets/index-CMfci7CE.js\")",
-      "Bash(curl -s \"https://sample-crm-six.vercel.app/registerSW.js\")"
+      "Bash(curl -s \"https://sample-crm-six.vercel.app/registerSW.js\")",
+      "Bash(curl -s -I \"https://sample-crm-six.vercel.app/\")"
     ]
   }
 }

@@ -84,7 +84,9 @@
       "Bash(curl -s https://served-donald-stats-reviews.trycloudflare.com/health)",
       "Bash(NEON_URL=\"postgresql://neondb_owner:npg_dzXAYG5yDCN6@ep-winter-leaf-amdgv8af-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\")",
       "Bash(DATABASE_URL=\"$NEON_URL\" npx prisma migrate deploy)",
-      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_dzXAYG5yDCN6@ep-winter-leaf-amdgv8af-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npx ts-node prisma/seed.ts)"
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_dzXAYG5yDCN6@ep-winter-leaf-amdgv8af-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npx ts-node prisma/seed.ts)",
+      "Bash(curl -s -X POST https://sample-crm-six.vercel.app/api/v1/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@crm.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin@123\"\"\"\"}')",
+      "Bash(vercel logs:*)"
     ]
   }
 }

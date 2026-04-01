@@ -6,7 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.config = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
-dotenv_1.default.config({ path: path_1.default.join(__dirname, '../../.env') });
+const fs_1 = __importDefault(require("fs"));
+const envPath = path_1.default.join(__dirname, '../../.env');
+if (fs_1.default.existsSync(envPath)) {
+    dotenv_1.default.config({ path: envPath });
+}
 const requiredEnvVars = [
     'DATABASE_URL',
     'JWT_ACCESS_SECRET',

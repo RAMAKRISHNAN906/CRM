@@ -151,7 +151,8 @@ export type ModuleId =
   | 'leads' | 'contacts' | 'deals' | 'tasks' | 'reports'
   | 'pipeline' | 'calendar' | 'email' | 'documents' | 'products'
   | 'quotes' | 'invoices' | 'campaigns' | 'analytics' | 'forecasting'
-  | 'territories' | 'support' | 'knowledge' | 'integrations' | 'automation';
+  | 'territories' | 'support' | 'knowledge' | 'integrations' | 'automation'
+  | 'accounts' | 'tickets' | 'team';
 
 export interface ModuleConfig {
   id: ModuleId;

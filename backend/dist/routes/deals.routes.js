@@ -8,6 +8,7 @@ const validation_1 = require("../utils/validation");
 const router = (0, express_1.Router)();
 router.use(auth_middleware_1.authenticate);
 router.get('/pipeline', deals_controller_1.getPipeline);
+router.get('/forecast', deals_controller_1.getForecasting);
 router.get('/', deals_controller_1.getDeals);
 router.get('/:id', deals_controller_1.getDeal);
 router.post('/', (0, validate_middleware_1.validate)(validation_1.dealSchema), deals_controller_1.createDeal);

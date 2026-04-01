@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMe = exports.logout = exports.refresh = exports.login = exports.register = void 0;
+exports.getMe = exports.changePassword = exports.logout = exports.refresh = exports.login = exports.register = void 0;
 const prisma_1 = require("../config/prisma");
 const hash_1 = require("../utils/hash");
 const jwt_1 = require("../utils/jwt");
@@ -25,7 +25,7 @@ const register = async (req, res, next) => {
                     create: {
                         theme: 'dark',
                         accentColor: 'violet',
-                        selectedModules: JSON.stringify(['leads', 'contacts', 'deals', 'tasks']),
+                        selectedModules: JSON.stringify(['leads', 'contacts', 'deals', 'tasks', 'pipeline', 'calendar', 'products', 'quotes', 'email', 'reports', 'support', 'documents']),
                     },
                 },
             },
@@ -144,6 +144,29 @@ const logout = async (req, res, next) => {
     }
 };
 exports.logout = logout;
+const changePassword = async (req, res, next) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = await prisma_1.prisma.user.findUnique({ where: { id: req.user.userId } });
+        if (!user) {
+            (0, response_1.sendError)(res, 'User not found', 404);
+            return;
+        }
+        const isValid = await (0, hash_1.comparePassword)(currentPassword, user.password);
+        if (!isValid) {
+            (0, response_1.sendError)(res, 'Current password is incorrect', 400);
+            return;
+        }
+        const hashed = await (0, hash_1.hashPassword)(newPassword);
+        await prisma_1.prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
+        logger_1.logger.info(`Password changed for user: ${user.email}`);
+        (0, response_1.sendSuccess)(res, null, 'Password updated successfully');
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.changePassword = changePassword;
 const getMe = async (req, res, next) => {
     try {
         const user = await prisma_1.prisma.user.findUnique({
@@ -157,7 +180,24 @@ const getMe = async (req, res, next) => {
             (0, response_1.sendError)(res, 'User not found', 404);
             return;
         }
-        (0, response_1.sendSuccess)(res, user, 'User retrieved');
+        // Parse JSON-string fields in preference before returning
+        const payload = user.preference ? {
+            ...user,
+            preference: {
+                ...user.preference,
+                selectedModules: (() => {
+                    const raw = user.preference.selectedModules;
+                    const parsed = typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []);
+                    const DEFAULT = ['leads', 'contacts', 'deals', 'tasks', 'pipeline', 'calendar', 'products', 'quotes', 'email', 'reports', 'support', 'documents'];
+                    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT;
+                })(),
+                dashboardLayout: typeof user.preference.dashboardLayout === 'string'
+                    ? JSON.parse(user.preference.dashboardLayout) : (user.preference.dashboardLayout ?? {}),
+                notifications: typeof user.preference.notifications === 'string'
+                    ? JSON.parse(user.preference.notifications) : (user.preference.notifications ?? {}),
+            },
+        } : user;
+        (0, response_1.sendSuccess)(res, payload, 'User retrieved');
     }
     catch (error) {
         next(error);

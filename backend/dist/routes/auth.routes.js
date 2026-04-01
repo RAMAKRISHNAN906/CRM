@@ -12,5 +12,6 @@ router.post('/login', rateLimiter_1.authRateLimiter, (0, validate_middleware_1.v
 router.post('/refresh', (0, validate_middleware_1.validate)(validation_1.refreshSchema), auth_controller_1.refresh);
 router.post('/logout', auth_controller_1.logout);
 router.get('/me', auth_middleware_1.authenticate, auth_controller_1.getMe);
+router.post('/change-password', auth_middleware_1.authenticate, auth_controller_1.changePassword);
 exports.default = router;
 //# sourceMappingURL=auth.routes.js.map

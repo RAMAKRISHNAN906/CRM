@@ -32,6 +32,10 @@ export const ALL_MODULES: ModuleConfig[] = [
   { id: 'knowledge',   name: 'Knowledge Base', description: 'Internal knowledge management',       icon: 'BookOpen',     path: '/knowledge',   category: 'service',   isPremium: true },
   { id: 'integrations',name: 'Integrations',description: 'Third-party integrations',              icon: 'Plug',         path: '/integrations',category: 'admin',     isPremium: true },
   { id: 'automation',  name: 'Automation',  description: 'Workflow automation rules',              icon: 'Zap',          path: '/automation',  category: 'admin',     isPremium: true },
+  { id: 'accounts',   name: 'Accounts',   description: 'Company and organization management',     icon: 'Building2',    path: '/accounts',    category: 'sales' },
+  { id: 'tickets',    name: 'Tickets',    description: 'Customer support tickets & SLA tracking', icon: 'Ticket',       path: '/tickets',     category: 'service' },
+  { id: 'team',       name: 'Team',       description: 'Team hierarchy and member management',    icon: 'UsersRound',   path: '/team',        category: 'admin' },
+  { id: 'analytics',  name: 'Analytics',  description: 'Advanced analytics & revenue reports',    icon: 'TrendingUp',   path: '/analytics',   category: 'analytics', isPremium: true },
 ];
 
 export const DEFAULT_MODULES = [

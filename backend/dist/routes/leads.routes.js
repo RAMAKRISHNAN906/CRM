@@ -12,5 +12,7 @@ router.get('/:id', leads_controller_1.getLead);
 router.post('/', (0, validate_middleware_1.validate)(validation_1.leadSchema), leads_controller_1.createLead);
 router.put('/:id', (0, validate_middleware_1.validate)(validation_1.leadSchema.partial()), leads_controller_1.updateLead);
 router.delete('/:id', leads_controller_1.deleteLead);
+router.post('/:id/convert', leads_controller_1.convertLead);
+router.post('/bulk-assign', leads_controller_1.bulkAssign);
 exports.default = router;
 //# sourceMappingURL=leads.routes.js.map

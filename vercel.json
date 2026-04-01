@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd backend && npm install && npx prisma generate && cd ../frontend && npm install && npm run build",
+  "buildCommand": "cd backend && npm install && npx prisma generate && npm run build && cd ../frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "framework": null,
   "functions": {

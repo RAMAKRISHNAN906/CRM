@@ -93,7 +93,11 @@
       "Bash(curl -s https://sample-crm-six.vercel.app/)",
       "Bash(curl -s \"https://sample-crm-six.vercel.app/assets/index-CMfci7CE.js\")",
       "Bash(curl -s \"https://sample-crm-six.vercel.app/registerSW.js\")",
-      "Bash(curl -s -I \"https://sample-crm-six.vercel.app/\")"
+      "Bash(curl -s -I \"https://sample-crm-six.vercel.app/\")",
+      "Bash(find /c/Users/ramak/Desktop/CRM -type f -name package.json -o -name pom.xml -o -name build.gradle -o -name Dockerfile -o -name .env* -o -name *.properties)",
+      "Bash(node dist/server.js)",
+      "Bash(npx nodemon:*)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
     ]
   }
 }

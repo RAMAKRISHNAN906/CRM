@@ -3,6 +3,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updatePreferences = exports.getPreferences = void 0;
 const prisma_1 = require("../config/prisma");
 const response_1 = require("../utils/response");
+function parsePref(pref) {
+    return {
+        ...pref,
+        selectedModules: typeof pref.selectedModules === 'string' ? JSON.parse(pref.selectedModules) : (pref.selectedModules ?? []),
+        dashboardLayout: typeof pref.dashboardLayout === 'string' ? JSON.parse(pref.dashboardLayout) : (pref.dashboardLayout ?? {}),
+        notifications: typeof pref.notifications === 'string' ? JSON.parse(pref.notifications) : (pref.notifications ?? {}),
+    };
+}
 const getPreferences = async (req, res, next) => {
     try {
         const pref = await prisma_1.prisma.preference.findUnique({ where: { userId: req.user.userId } });
@@ -10,7 +18,7 @@ const getPreferences = async (req, res, next) => {
             (0, response_1.sendError)(res, 'Preferences not found', 404);
             return;
         }
-        (0, response_1.sendSuccess)(res, pref, 'Preferences retrieved');
+        (0, response_1.sendSuccess)(res, parsePref(pref), 'Preferences retrieved');
     }
     catch (error) {
         next(error);
@@ -32,7 +40,7 @@ const updatePreferences = async (req, res, next) => {
             update: updateData,
             create: { userId: req.user.userId, ...updateData },
         });
-        (0, response_1.sendSuccess)(res, pref, 'Preferences updated');
+        (0, response_1.sendSuccess)(res, parsePref(pref), 'Preferences updated');
     }
     catch (error) {
         next(error);

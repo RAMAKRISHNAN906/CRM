@@ -21,11 +21,16 @@ app.use((0, helmet_1.default)({
 }));
 // CORS
 app.use((0, cors_1.default)({
-    origin: [env_1.config.clientUrl, 'http://localhost:5173', 'http://localhost:3000'],
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'bypass-tunnel-reminder'],
 }));
+// Bypass localtunnel reminder page
+app.use((req, _res, next) => {
+    req.headers['bypass-tunnel-reminder'] = 'true';
+    next();
+});
 // Compression
 app.use((0, compression_1.default)());
 // Body parsing

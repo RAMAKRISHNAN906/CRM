@@ -152,7 +152,9 @@ export type ModuleId =
   | 'pipeline' | 'calendar' | 'email' | 'documents' | 'products'
   | 'quotes' | 'invoices' | 'campaigns' | 'analytics' | 'forecasting'
   | 'territories' | 'support' | 'knowledge' | 'integrations' | 'automation'
-  | 'accounts' | 'tickets' | 'team';
+  | 'accounts' | 'tickets' | 'team'
+  | 'sales' | 'crm' | 'accounting' | 'procurement' | 'stock'
+  | 'manufacturing' | 'projects' | 'assets' | 'pos' | 'quality' | 'hr';
 
 export interface ModuleConfig {
   id: ModuleId;
@@ -160,6 +162,7 @@ export interface ModuleConfig {
   description: string;
   icon: string;
   path: string;
-  category: 'sales' | 'marketing' | 'service' | 'analytics' | 'admin';
+  category: 'sales' | 'crm' | 'marketing' | 'service' | 'analytics' | 'admin'
+    | 'accounting' | 'procurement' | 'inventory' | 'manufacturing' | 'projects' | 'hr';
   isPremium?: boolean;
 }

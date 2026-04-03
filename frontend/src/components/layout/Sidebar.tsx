@@ -33,7 +33,12 @@ export const Sidebar: React.FC = () => {
   const { sidebarCollapsed, mobileSidebarOpen, toggleSidebar, setMobileSidebarOpen } = useUIStore();
   const location = useLocation();
 
-  const selectedModules: string[] = user?.preference?.selectedModules || ['leads', 'contacts', 'deals', 'tasks', 'reports'];
+  const rawModules = user?.preference?.selectedModules;
+  const selectedModules: string[] = Array.isArray(rawModules)
+    ? rawModules
+    : typeof rawModules === 'string'
+      ? (() => { try { return JSON.parse(rawModules); } catch { return []; } })()
+      : ['leads', 'contacts', 'deals', 'tasks', 'reports'];
   const moduleNavItems = selectedModules
     .map((id) => ALL_MODULES.find((m) => m.id === id))
     .filter(Boolean)

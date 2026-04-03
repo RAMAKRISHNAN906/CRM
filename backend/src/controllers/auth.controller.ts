@@ -96,8 +96,29 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     });
 
     const { password: _, ...userWithoutPassword } = user;
+
+    // Parse JSON-string fields in preference
+    const parsedUser = userWithoutPassword.preference ? {
+      ...userWithoutPassword,
+      preference: {
+        ...userWithoutPassword.preference,
+        selectedModules: (() => {
+          const raw = userWithoutPassword.preference!.selectedModules;
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : (raw ?? []);
+          const DEFAULT = ['leads','contacts','deals','tasks','pipeline','reports'];
+          return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT;
+        })(),
+        dashboardLayout: typeof userWithoutPassword.preference.dashboardLayout === 'string'
+          ? JSON.parse(userWithoutPassword.preference.dashboardLayout as string)
+          : (userWithoutPassword.preference.dashboardLayout ?? {}),
+        notifications: typeof userWithoutPassword.preference.notifications === 'string'
+          ? JSON.parse(userWithoutPassword.preference.notifications as string)
+          : (userWithoutPassword.preference.notifications ?? {}),
+      },
+    } : userWithoutPassword;
+
     logger.info(`User logged in: ${email}`);
-    sendSuccess(res, { user: userWithoutPassword, accessToken, refreshToken }, 'Login successful');
+    sendSuccess(res, { user: parsedUser, accessToken, refreshToken }, 'Login successful');
   } catch (error) {
     next(error);
   }

@@ -155,7 +155,7 @@ export type ModuleId =
   | 'accounts' | 'tickets' | 'team'
   | 'sales' | 'crm' | 'accounting' | 'procurement' | 'stock'
   | 'manufacturing' | 'projects' | 'assets' | 'pos' | 'quality' | 'hr'
-  | 'festivals' | 'country-analytics' | 'purchase-orders' | 'activities' | 'competitors';
+  | 'festivals' | 'country-analytics' | 'purchase-orders' | 'activities' | 'competitors' | 'opportunities';
 
 export interface ModuleConfig {
   id: ModuleId;

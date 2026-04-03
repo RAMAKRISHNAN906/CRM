@@ -65,6 +65,7 @@ export const ALL_MODULES: ModuleConfig[] = [
   { id: 'purchase-orders',    name: 'Purchase Orders',   description: 'PO flow: Deal → PO → Invoice',            icon: 'ClipboardCheck', path: '/purchase-orders', category: 'procurement' },
   { id: 'activities',         name: 'Activities',        description: 'Meetings, calls, emails with reminders',  icon: 'CalendarCheck', path: '/activities',       category: 'crm' },
   { id: 'competitors',        name: 'Competitors',       description: 'Track competitor strengths and weaknesses', icon: 'Swords',        path: '/competitors',      category: 'sales' },
+  { id: 'opportunities',      name: 'Opportunities',     description: 'Track and manage sales opportunities',       icon: 'Lightbulb',     path: '/opportunities',    category: 'sales' },
 ];
 
 export const DEFAULT_MODULES = [

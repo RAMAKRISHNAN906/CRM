@@ -27,6 +27,7 @@ import exportRoutes from './export.routes';
 import activitiesRoutes from './activities.routes';
 import projectsRoutes from './projects.routes';
 import countryTargetsRoutes from './countryTargets.routes';
+import opportunitiesRoutes from './opportunities.routes';
 
 const router = Router();
 
@@ -43,7 +44,8 @@ router.use('/accounts', accountsRoutes);
 router.use('/communications', communicationsRoutes);
 router.use('/activities', activitiesRoutes);
 router.use('/projects',  projectsRoutes);
-router.use('/country-targets', countryTargetsRoutes);
+router.use('/country-targets',  countryTargetsRoutes);
+router.use('/opportunities',    opportunitiesRoutes);
 router.use('/tickets', ticketsRoutes);
 
 // Finance

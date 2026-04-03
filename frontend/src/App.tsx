@@ -50,6 +50,7 @@ const CountryAnalyticsPage = lazy(() => import('./pages/modules/CountryAnalytics
 const PurchaseOrdersPage   = lazy(() => import('./pages/modules/PurchaseOrdersPage').then(m => ({ default: m.PurchaseOrdersPage })));
 const ActivitiesPage       = lazy(() => import('./pages/modules/ActivitiesPage').then(m => ({ default: m.ActivitiesPage })));
 const CompetitorsPage      = lazy(() => import('./pages/modules/CompetitorsPage').then(m => ({ default: m.CompetitorsPage })));
+const OpportunitiesPage    = lazy(() => import('./pages/modules/OpportunitiesPage').then(m => ({ default: m.OpportunitiesPage })));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -135,6 +136,7 @@ const App: React.FC = () => {
               <Route path="purchase-orders"   element={<S><PurchaseOrdersPage /></S>} />
               <Route path="activities"        element={<S><ActivitiesPage /></S>} />
               <Route path="competitors"       element={<S><CompetitorsPage /></S>} />
+              <Route path="opportunities"     element={<S><OpportunitiesPage /></S>} />
 
               <Route path="settings"       element={<SettingsPage />} />
               <Route path="*"              element={<NotFoundPage />} />

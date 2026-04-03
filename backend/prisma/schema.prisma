@@ -191,11 +191,13 @@ model User {
   customPermissions Json?        // override permissions for this user
 
   // CRM ownership
-  ownedLeads        Lead[]       @relation("LeadOwner")
-  assignedLeads     Lead[]       @relation("LeadAssignee")
-  ownedContacts     Contact[]
-  ownedDeals        Deal[]       @relation("DealOwner")
-  assignedDeals     Deal[]       @relation("DealAssignee")
+  ownedLeads            Lead[]          @relation("LeadOwner")
+  assignedLeads         Lead[]          @relation("LeadAssignee")
+  ownedContacts         Contact[]
+  ownedDeals            Deal[]          @relation("DealOwner")
+  assignedDeals         Deal[]          @relation("DealAssignee")
+  ownedOpportunities    Opportunity[]   @relation("OpportunityOwner")
+  assignedOpportunities Opportunity[]   @relation("OpportunityAssignee")
   tasks             Task[]       @relation("TaskOwner")
   assignedTasks     Task[]       @relation("TaskAssignee")
   tickets           SupportTicket[]
@@ -302,9 +304,10 @@ model Account {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  contacts  Contact[]
-  deals     Deal[]
-  leads     Lead[]
+  contacts      Contact[]
+  deals         Deal[]
+  leads         Lead[]
+  opportunities Opportunity[]
 
   @@index([name])
   @@index([domain])
@@ -403,6 +406,7 @@ model Contact {
   account   Account? @relation(fields: [accountId], references: [id])
 
   deals         Deal[]
+  opportunities Opportunity[]
   activities    Communication[]
   tasks         Task[]          @relation("ContactTasks")
   tickets       SupportTicket[]
@@ -1381,4 +1385,60 @@ model CountryTarget {
 
   @@index([country])
   @@index([isActive])
+}
+
+// ── Opportunity Module ───────────────────────────────────────
+enum OpportunityStage {
+  PROSPECTING
+  QUALIFICATION
+  NEEDS_ANALYSIS
+  VALUE_PROPOSITION
+  DECISION_MAKERS
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum OpportunityType {
+  NEW_BUSINESS
+  EXISTING_BUSINESS
+  RENEWAL
+  UPGRADE
+}
+
+model Opportunity {
+  id          String           @id @default(cuid())
+  title       String
+  description String?
+  stage       OpportunityStage @default(PROSPECTING)
+  type        OpportunityType  @default(NEW_BUSINESS)
+  priority    String           @default("MEDIUM")
+  value       Float            @default(0)
+  currency    String           @default("USD")
+  probability Int              @default(10)
+  closeDate   DateTime?
+  source      String?
+  tags        String[]         @default([])
+  notes       String?
+  lostReason  String?
+  deletedAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  ownerId    String
+  owner      User     @relation("OpportunityOwner",   fields: [ownerId],    references: [id])
+  assigneeId String?
+  assignee   User?    @relation("OpportunityAssignee", fields: [assigneeId], references: [id])
+  contactId  String?
+  contact    Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  accountId  String?
+  account    Account? @relation(fields: [accountId], references: [id])
+
+  @@index([stage])
+  @@index([ownerId])
+  @@index([assigneeId])
+  @@index([contactId])
+  @@index([deletedAt])
+  @@index([closeDate])
 }

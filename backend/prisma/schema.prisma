@@ -204,6 +204,14 @@ model User {
   documents         Document[]
   invoices          Invoice[]
   automationLogs    AutomationLog[]
+  // Enterprise v2
+  preferredLanguage   String?      @default("en")
+  quotes              Quote[]      @relation("UserQuotes")
+  purchaseOrders      PurchaseOrder[] @relation("UserPOs")
+  pipelineTransitions PipelineDealTransition[] @relation("UserPipelineTransitions")
+  projects            Project[]               @relation("UserProjects")
+  projectMembers      ProjectMember[]         @relation("UserProjectMembers")
+  projectTasks        ProjectTask[]           @relation("UserProjectTasks")
 
   @@index([email])
   @@index([role])
@@ -398,6 +406,9 @@ model Contact {
   activities    Communication[]
   tasks         Task[]          @relation("ContactTasks")
   tickets       SupportTicket[]
+  // Enterprise v2
+  preferredLanguage String?     @default("en")
+  quotes        Quote[]         @relation("ContactQuotes")
 
   @@index([ownerId])
   @@index([email])
@@ -440,6 +451,15 @@ model Deal {
   documents     Document[]
   invoices      Invoice[]
   stageHistory  DealStageHistory[]
+  // Enterprise v2
+  stageId         String?
+  pipelineStage   PipelineStage?  @relation(fields: [stageId], references: [id])
+  stageEnteredAt  DateTime?
+  stageTransitions PipelineDealTransition[]
+  demoDetail      DemoDetail?
+  competitors   Competitor[]    @relation("DealCompetitors")
+  quotes        Quote[]         @relation("DealQuotes")
+  purchaseOrders PurchaseOrder[] @relation("DealPOs")
 
   @@index([ownerId])
   @@index([assigneeId])
@@ -494,6 +514,10 @@ model Task {
   owner      User   @relation("TaskOwner", fields: [ownerId], references: [id])
   assigneeId String?
   assignee   User?  @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  // Enterprise v2
+  followUpStatus String?
+  completionPct  Int     @default(0)
+  subTasks       SubTask[]
 
   @@index([ownerId])
   @@index([assigneeId])
@@ -533,6 +557,13 @@ model Communication {
   deal      Deal?    @relation(fields: [dealId], references: [id])
   ticketId  String?
   ticket    SupportTicket? @relation(fields: [ticketId], references: [id])
+
+  // Activity / meeting fields
+  activityStatus  String?   // scheduled | completed | cancelled | no_show
+  meetingSummary  String?
+  nextAction      String?
+  duration        Int?      // meeting duration in minutes
+  meetingLink     String?
 
   // Email thread tracking
   threadId        String?
@@ -744,8 +775,9 @@ model Invoice {
   dealId      String?
   deal        Deal?  @relation(fields: [dealId], references: [id])
 
-  lineItems InvoiceLineItem[]
-  payments  Payment[]
+  lineItems      InvoiceLineItem[]
+  payments       Payment[]
+  purchaseOrders PurchaseOrder[]  @relation("InvoicePOs")
 
   @@index([status])
   @@index([createdById])
@@ -884,4 +916,451 @@ model ApiKey {
 
   @@index([keyHash])
   @@index([createdById])
+}
+
+// ============================================================
+// ENTERPRISE UPGRADE v2 — New Models
+// ============================================================
+
+// ── 1. DYNAMIC PIPELINE STAGES ───────────────────────────────
+
+model PipelineStage {
+  id                 String   @id @default(uuid())
+  name               String
+  order              Int
+  pipelineType       String   @default("sales")
+  color              String   @default("#6366f1")
+  isActive           Boolean  @default(true)
+  description        String?
+  defaultProbability Int      @default(10)
+  isWon              Boolean  @default(false)
+  isLost             Boolean  @default(false)
+  expectedDays       Int?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  deals           Deal[]
+  toTransitions   PipelineDealTransition[] @relation("TransitionToStage")
+  fromTransitions PipelineDealTransition[] @relation("TransitionFromStage")
+
+  @@index([pipelineType])
+  @@index([order])
+}
+
+model PipelineDealTransition {
+  id            String    @id @default(uuid())
+  enteredAt     DateTime  @default(now())
+  exitedAt      DateTime?
+  durationHours Float?
+
+  dealId      String
+  deal        Deal           @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  fromStageId String?
+  fromStage   PipelineStage? @relation("TransitionFromStage", fields: [fromStageId], references: [id], onDelete: SetNull)
+  toStageId   String
+  toStage     PipelineStage  @relation("TransitionToStage", fields: [toStageId], references: [id])
+  changedById String?
+  changedBy   User?          @relation("UserPipelineTransitions", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([dealId])
+  @@index([toStageId])
+  @@index([enteredAt])
+}
+
+// ── 2. DEMO DETAILS (linked to Deal) ─────────────────────────
+
+model DemoDetail {
+  id          String    @id @default(uuid())
+  demoDate    DateTime?
+  meetingLink String?
+  demoStatus  String    @default("Scheduled")
+  demoSummary String?
+  nextAction  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  dealId String @unique
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+}
+
+// ── 3. COMPANY SETTINGS ───────────────────────────────────────
+
+model CompanySettings {
+  id            String   @id @default(uuid())
+  companyName   String
+  logoUrl       String?
+  footerAddress String?
+  country       String   @default("IN")
+  currency      String   @default("INR")
+  taxNumber     String?
+  phone         String?
+  email         String?
+  website       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ── 4. PAYMENT TERMS ──────────────────────────────────────────
+
+model PaymentTerm {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  content     String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quotes Quote[]
+}
+
+// ── 5. QUOTES ────────────────────────────────────────────────
+
+enum QuoteType {
+  SQ
+  SO
+  SI
+  SCR
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+model Quote {
+  id            String      @id @default(uuid())
+  quoteNumber   String      @unique
+  type          QuoteType   @default(SQ)
+  status        QuoteStatus @default(DRAFT)
+  currency      String      @default("INR")
+  subtotal      Float       @default(0)
+  tax           Float       @default(0)
+  discount      Float       @default(0)
+  total         Float       @default(0)
+  validUntil    DateTime?
+  notes         String?
+  termsContent  String?
+  pdfUrl        String?
+  country       String      @default("IN")
+  financialYear String?
+  deletedAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  createdById   String
+  createdBy     User         @relation("UserQuotes", fields: [createdById], references: [id])
+  contactId     String?
+  contact       Contact?     @relation("ContactQuotes", fields: [contactId], references: [id])
+  dealId        String?
+  deal          Deal?        @relation("DealQuotes", fields: [dealId], references: [id])
+  paymentTermId String?
+  paymentTerm   PaymentTerm? @relation(fields: [paymentTermId], references: [id])
+
+  lineItems QuoteLineItem[]
+
+  @@index([type])
+  @@index([status])
+  @@index([createdById])
+  @@index([dealId])
+  @@index([deletedAt])
+}
+
+model QuoteLineItem {
+  id          String   @id @default(uuid())
+  description String
+  quantity    Float
+  unitPrice   Float
+  discount    Float    @default(0)
+  tax         Float    @default(0)
+  total       Float
+  createdAt   DateTime @default(now())
+
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+}
+
+// ── 6. PURCHASE ORDERS ────────────────────────────────────────
+
+enum POStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id        String   @id @default(uuid())
+  poNumber  String   @unique
+  status    POStatus @default(DRAFT)
+  currency  String   @default("INR")
+  subtotal  Float    @default(0)
+  tax       Float    @default(0)
+  total     Float    @default(0)
+  notes     String?
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dealId      String?
+  deal        Deal?    @relation("DealPOs", fields: [dealId], references: [id])
+  invoiceId   String?
+  invoice     Invoice? @relation("InvoicePOs", fields: [invoiceId], references: [id])
+  createdById String
+  createdBy   User     @relation("UserPOs", fields: [createdById], references: [id])
+
+  lineItems POLineItem[]
+
+  @@index([status])
+  @@index([dealId])
+  @@index([deletedAt])
+}
+
+model POLineItem {
+  id              String        @id @default(uuid())
+  description     String
+  quantity        Float
+  unitPrice       Float
+  total           Float
+  createdAt       DateTime      @default(now())
+
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+}
+
+// ── 7. LANGUAGES ──────────────────────────────────────────────
+
+model Language {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  direction String   @default("ltr")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([code])
+}
+
+// ── 8. FESTIVALS ──────────────────────────────────────────────
+
+model Festival {
+  id               String    @id @default(uuid())
+  name             String
+  date             DateTime
+  country          String
+  isRecurring      Boolean   @default(true)
+  sendDaysBefore   Int       @default(0)
+  isAutoSend       Boolean   @default(false)
+  targetAll        Boolean   @default(true)
+  targetTags       Json      @default("[]")
+  emoji            String    @default("🎉")
+
+  // Scheduled direct-send fields
+  scheduledAt      DateTime? // exact date+time to auto-send
+  whatsappMessage  String?   // WhatsApp message body (supports {name}, {festival})
+  emailSubject     String?   // email subject
+  emailMessage     String?   // email body (HTML or plain)
+  isSent           Boolean   @default(false) // true once scheduledAt send is done
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  messages   FestivalMessage[]
+  sendLogs   FestivalSendLog[]
+  recipients FestivalRecipient[]
+
+  @@index([country])
+  @@index([date])
+  @@index([scheduledAt])
+}
+
+model FestivalRecipient {
+  id              String    @id @default(uuid())
+  name            String
+  phone           String?   // WhatsApp number with country code e.g. +919876543210
+  email           String?
+  emailStatus     String    @default("pending")    // pending | sent | failed | skipped
+  whatsappStatus  String    @default("pending")    // pending | sent | failed | skipped
+  emailError      String?
+  whatsappError   String?
+  sentAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  festivalId String
+  festival   Festival @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+
+  @@index([festivalId])
+}
+
+model FestivalSendLog {
+  id          String   @id @default(uuid())
+  channel     String
+  status      String   @default("sent")   // sent | failed | skipped
+  messageBody String
+  sentAt      DateTime @default(now())
+  year        Int
+
+  festivalId String
+  festival   Festival @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+  contactId  String
+
+  @@unique([festivalId, contactId, channel, year])
+  @@index([festivalId])
+  @@index([contactId])
+  @@index([sentAt])
+}
+
+model FestivalMessage {
+  id              String   @id @default(uuid())
+  language        String   @default("en")
+  messageTemplate String
+  channel         String   @default("EMAIL")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  festivalId String
+  festival   Festival @relation(fields: [festivalId], references: [id], onDelete: Cascade)
+
+  @@index([festivalId])
+}
+
+// Global customer list — shared across all festivals
+model FestivalCustomer {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?   // WhatsApp number e.g. +919876543210
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+// ── 9. COMPETITORS ────────────────────────────────────────────
+
+model Competitor {
+  id         String   @id @default(uuid())
+  name       String
+  phone      String?
+  website    String?
+  strengths  String?
+  weaknesses String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  dealId String?
+  deal   Deal?   @relation("DealCompetitors", fields: [dealId], references: [id])
+
+  @@index([dealId])
+}
+
+// ── 10. SUBTASKS ──────────────────────────────────────────────
+
+model SubTask {
+  id          String   @id @default(uuid())
+  title       String
+  isCompleted Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+// ── PROJECTS ──────────────────────────────────────────────────
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ProjectTaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+model Project {
+  id          String          @id @default(uuid())
+  name        String
+  description String?
+  status      ProjectStatus   @default(PLANNING)
+  priority    ProjectPriority @default(MEDIUM)
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Float?
+  tags        String[]        @default([])
+  deletedAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  createdById String
+  createdBy   User   @relation("UserProjects", fields: [createdById], references: [id])
+
+  members     ProjectMember[]
+  tasks       ProjectTask[]
+
+  @@index([status])
+  @@index([createdById])
+  @@index([deletedAt])
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User    @relation("UserProjectMembers", fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ProjectTask {
+  id          String            @id @default(uuid())
+  title       String
+  description String?
+  status      ProjectTaskStatus @default(TODO)
+  priority    ProjectPriority   @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  order       Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  projectId  String
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assigneeId String?
+  assignee   User?   @relation("UserProjectTasks", fields: [assigneeId], references: [id])
+
+  @@index([projectId])
+  @@index([status])
+  @@index([assigneeId])
 }

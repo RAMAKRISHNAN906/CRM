@@ -34,9 +34,10 @@ export const Sidebar: React.FC = () => {
   const location = useLocation();
 
   const selectedModules: string[] = user?.preference?.selectedModules || ['leads', 'contacts', 'deals', 'tasks', 'reports'];
-  const moduleNavItems = ALL_MODULES
-    .filter((m) => selectedModules.includes(m.id))
-    .slice(0, 12);
+  const moduleNavItems = selectedModules
+    .map((id) => ALL_MODULES.find((m) => m.id === id))
+    .filter(Boolean)
+    .slice(0, 12) as typeof ALL_MODULES;
 
   const allNavItems = [
     ...navItems,

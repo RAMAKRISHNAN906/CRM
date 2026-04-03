@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma';
 import { sendSuccess, sendError, sendPaginated } from '../utils/response';
+import { generateInvoicePdf } from '../services/invoicePdf.service';
+import { generateInvoiceDocx } from '../services/invoiceWord.service';
 
 const generateInvoiceNumber = async (): Promise<string> => {
   const count = await prisma.invoice.count();
@@ -85,6 +87,37 @@ export const createInvoice = async (req: Request, res: Response, next: NextFunct
   } catch (error) { next(error); }
 };
 
+export const updateInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { lineItems, dueDate, notes, tax = 0, discount = 0 } = req.body;
+    const subtotal = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0);
+    const total = subtotal + tax - discount;
+
+    // Replace all line items
+    await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: req.params.id } });
+
+    const invoice = await prisma.invoice.update({
+      where: { id: req.params.id },
+      data: {
+        subtotal, tax, discount, total,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        notes,
+        lineItems: {
+          create: lineItems.map((item: any) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.quantity * item.unitPrice,
+          })),
+        },
+      },
+      include: { lineItems: true },
+    });
+
+    sendSuccess(res, invoice, 'Invoice updated');
+  } catch (error) { next(error); }
+};
+
 export const updateInvoiceStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { status } = req.body;
@@ -128,5 +161,27 @@ export const deleteInvoice = async (req: Request, res: Response, next: NextFunct
   try {
     await prisma.invoice.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
     sendSuccess(res, null, 'Invoice deleted');
+  } catch (error) { next(error); }
+};
+
+export const downloadInvoicePdf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const buffer = await generateInvoicePdf(req.params.id);
+    const invoice = await prisma.invoice.findFirst({ where: { id: req.params.id }, select: { invoiceNumber: true } });
+    const filename = `Invoice-${invoice?.invoiceNumber ?? req.params.id}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.end(buffer);
+  } catch (error) { next(error); }
+};
+
+export const downloadInvoiceDocx = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const buffer = await generateInvoiceDocx(req.params.id);
+    const invoice = await prisma.invoice.findFirst({ where: { id: req.params.id }, select: { invoiceNumber: true } });
+    const filename = `Invoice-${invoice?.invoiceNumber ?? req.params.id}.docx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.end(buffer);
   } catch (error) { next(error); }
 };

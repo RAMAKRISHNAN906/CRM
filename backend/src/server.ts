@@ -3,11 +3,16 @@ import app from './app';
 import { config } from './config/env';
 import { logger } from './utils/logger';
 import { prisma } from './config/prisma';
+import { startReminderEngine } from './services/reminderEngine.service';
+import { startFestivalScheduler } from './services/festivalScheduler.service';
 
 const server = app.listen(config.port, () => {
   logger.info(`🚀 Server running on port ${config.port} in ${config.env} mode`);
   logger.info(`📡 API: http://localhost:${config.port}/api/v1`);
   logger.info(`🏥 Health: http://localhost:${config.port}/health`);
+  // Start reminder engine — checks every 60 min for tasks due in 1 or 3 days
+  startReminderEngine(60);
+  startFestivalScheduler(24);
 });
 
 // Graceful shutdown

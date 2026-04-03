@@ -7,6 +7,7 @@ import {
   Settings, LogOut, User, ChevronRight,
   CheckCircle2, Clock, TrendingUp, AlertCircle, X,
 } from 'lucide-react';
+import { LanguageSwitcher } from '../../i18n/LanguageSwitcher';
 import { cn } from '../../utils/cn';
 import { useUIStore } from '../../store/uiStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -134,6 +135,9 @@ export const Navbar: React.FC = () => {
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
+
+        {/* Language switcher */}
+        <LanguageSwitcher />
 
         {/* Theme toggle */}
         <button

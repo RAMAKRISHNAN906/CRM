@@ -55,9 +55,16 @@ export const ALL_MODULES: ModuleConfig[] = [
   { id: 'analytics',     name: 'Analytics',       description: 'Advanced analytics dashboard',              icon: 'TrendingUp',   path: '/analytics',     category: 'analytics' },
 
   // ── Admin ──
-  { id: 'documents',     name: 'Documents',       description: 'Document management and storage',           icon: 'FileText',     path: '/documents',     category: 'admin' },
-  { id: 'automation',    name: 'Automation',      description: 'Workflow automation rules',                 icon: 'Zap',          path: '/automation',    category: 'admin' },
-  { id: 'integrations',  name: 'Integrations',    description: 'Third-party integrations',                  icon: 'Plug',         path: '/integrations',  category: 'admin' },
+  { id: 'documents',          name: 'Documents',         description: 'Document management and storage',          icon: 'FileText',    path: '/documents',          category: 'admin' },
+  { id: 'automation',         name: 'Automation',        description: 'Workflow automation rules',                icon: 'Zap',         path: '/automation',         category: 'admin' },
+  { id: 'integrations',       name: 'Integrations',      description: 'Third-party integrations',                 icon: 'Plug',        path: '/integrations',       category: 'admin' },
+
+  // ── Enterprise v2 ──
+  { id: 'festivals',          name: 'Festivals',         description: 'Festival greeting automation',             icon: 'Gift',        path: '/festivals',          category: 'crm' },
+  { id: 'country-analytics',  name: 'Country Analytics', description: 'Leads, deals and revenue by country',     icon: 'Globe',       path: '/country-analytics',  category: 'analytics' },
+  { id: 'purchase-orders',    name: 'Purchase Orders',   description: 'PO flow: Deal → PO → Invoice',            icon: 'ClipboardCheck', path: '/purchase-orders', category: 'procurement' },
+  { id: 'activities',         name: 'Activities',        description: 'Meetings, calls, emails with reminders',  icon: 'CalendarCheck', path: '/activities',       category: 'crm' },
+  { id: 'competitors',        name: 'Competitors',       description: 'Track competitor strengths and weaknesses', icon: 'Swords',        path: '/competitors',      category: 'sales' },
 ];
 
 export const DEFAULT_MODULES = [

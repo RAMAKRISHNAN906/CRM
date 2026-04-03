@@ -43,7 +43,13 @@ const EmailPage        = lazy(() => import('./pages/modules/EmailPage').then(m =
 const DocumentsPage    = lazy(() => import('./pages/modules/DocumentsPage').then(m => ({ default: m.DocumentsPage })));
 const IntegrationsPage = lazy(() => import('./pages/modules/IntegrationsPage').then(m => ({ default: m.IntegrationsPage })));
 const ProductsPage     = lazy(() => import('./pages/modules/ProductsPage').then(m => ({ default: m.ProductsPage })));
-const QuotesPage       = lazy(() => import('./pages/modules/QuotesPage').then(m => ({ default: m.QuotesPage })));
+const QuotesPage          = lazy(() => import('./pages/modules/QuotesPage').then(m => ({ default: m.QuotesPage })));
+// ── Enterprise v2 modules ─────────────────────────────────────────────────
+const FestivalsPage        = lazy(() => import('./pages/modules/FestivalsPage').then(m => ({ default: m.FestivalsPage })));
+const CountryAnalyticsPage = lazy(() => import('./pages/modules/CountryAnalyticsPage').then(m => ({ default: m.CountryAnalyticsPage })));
+const PurchaseOrdersPage   = lazy(() => import('./pages/modules/PurchaseOrdersPage').then(m => ({ default: m.PurchaseOrdersPage })));
+const ActivitiesPage       = lazy(() => import('./pages/modules/ActivitiesPage').then(m => ({ default: m.ActivitiesPage })));
+const CompetitorsPage      = lazy(() => import('./pages/modules/CompetitorsPage').then(m => ({ default: m.CompetitorsPage })));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center h-64">
@@ -122,6 +128,13 @@ const App: React.FC = () => {
               <Route path="automation"     element={<S><AutomationPage /></S>} />
               <Route path="integrations"   element={<S><IntegrationsPage /></S>} />
               <Route path="analytics"      element={<S><AdvancedReportsPage /></S>} />
+
+              {/* Enterprise v2 */}
+              <Route path="festivals"         element={<S><FestivalsPage /></S>} />
+              <Route path="country-analytics" element={<S><CountryAnalyticsPage /></S>} />
+              <Route path="purchase-orders"   element={<S><PurchaseOrdersPage /></S>} />
+              <Route path="activities"        element={<S><ActivitiesPage /></S>} />
+              <Route path="competitors"       element={<S><CompetitorsPage /></S>} />
 
               <Route path="settings"       element={<SettingsPage />} />
               <Route path="*"              element={<NotFoundPage />} />

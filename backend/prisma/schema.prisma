@@ -1364,3 +1364,21 @@ model ProjectTask {
   @@index([status])
   @@index([assigneeId])
 }
+
+// ── Country Targets ──────────────────────────────────────────
+model CountryTarget {
+  id            String   @id @default(cuid())
+  country       String   @unique
+  countryCode   String?
+  region        String?
+  targetRevenue Float    @default(0)
+  targetDeals   Int      @default(0)
+  priority      String   @default("MEDIUM")
+  notes         String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([country])
+  @@index([isActive])
+}

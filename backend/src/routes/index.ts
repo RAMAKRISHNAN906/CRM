@@ -26,6 +26,7 @@ import subtasksRoutes from './subtasks.routes';
 import exportRoutes from './export.routes';
 import activitiesRoutes from './activities.routes';
 import projectsRoutes from './projects.routes';
+import countryTargetsRoutes from './countryTargets.routes';
 
 const router = Router();
 
@@ -42,6 +43,7 @@ router.use('/accounts', accountsRoutes);
 router.use('/communications', communicationsRoutes);
 router.use('/activities', activitiesRoutes);
 router.use('/projects',  projectsRoutes);
+router.use('/country-targets', countryTargetsRoutes);
 router.use('/tickets', ticketsRoutes);
 
 // Finance

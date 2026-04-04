@@ -8,10 +8,15 @@ const app_1 = __importDefault(require("./app"));
 const env_1 = require("./config/env");
 const logger_1 = require("./utils/logger");
 const prisma_1 = require("./config/prisma");
+const reminderEngine_service_1 = require("./services/reminderEngine.service");
+const festivalScheduler_service_1 = require("./services/festivalScheduler.service");
 const server = app_1.default.listen(env_1.config.port, () => {
     logger_1.logger.info(`🚀 Server running on port ${env_1.config.port} in ${env_1.config.env} mode`);
     logger_1.logger.info(`📡 API: http://localhost:${env_1.config.port}/api/v1`);
     logger_1.logger.info(`🏥 Health: http://localhost:${env_1.config.port}/health`);
+    // Start reminder engine — checks every 60 min for tasks due in 1 or 3 days
+    (0, reminderEngine_service_1.startReminderEngine)(60);
+    (0, festivalScheduler_service_1.startFestivalScheduler)(24);
 });
 // Graceful shutdown
 const shutdown = async (signal) => {

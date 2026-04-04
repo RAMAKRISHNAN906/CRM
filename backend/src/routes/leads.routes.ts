@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   getLeads, getLead, createLead, updateLead, deleteLead,
-  convertLead, bulkAssign,
+  convertLead, convertToOpportunity, bulkAssign,
 } from '../controllers/leads.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
@@ -16,6 +16,7 @@ router.post('/', validate(leadSchema), createLead);
 router.put('/:id', validate(leadSchema.partial()), updateLead);
 router.delete('/:id', deleteLead);
 router.post('/:id/convert', convertLead);
+router.post('/:id/convert-to-opportunity', convertToOpportunity);
 router.post('/bulk-assign', bulkAssign);
 
 export default router;

@@ -337,7 +337,13 @@ model Lead {
   isDuplicate     Boolean    @default(false)
   duplicateOfId   String?
   convertedAt     DateTime?
-  convertedToContactId String?
+  convertedToContactId    String?
+  convertedToOpportunityId String?
+  // Phase 1 fields
+  country                     String?
+  decisionMakerName           String?
+  decisionMakerDesignation    String?
+  whatsappNumber              String?
   deletedAt       DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
@@ -358,6 +364,7 @@ model Lead {
   @@index([status])
   @@index([email])
   @@index([score])
+  @@index([country])
   @@index([createdAt])
   @@index([deletedAt])
 }
@@ -990,18 +997,23 @@ model DemoDetail {
 // ── 3. COMPANY SETTINGS ───────────────────────────────────────
 
 model CompanySettings {
-  id            String   @id @default(uuid())
-  companyName   String
-  logoUrl       String?
-  footerAddress String?
-  country       String   @default("IN")
-  currency      String   @default("INR")
-  taxNumber     String?
-  phone         String?
-  email         String?
-  website       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  companyName         String
+  logoUrl             String?  // base64 data URL or file path
+  footerAddress       String?
+  address             String?
+  city                String?
+  state               String?
+  zipCode             String?
+  country             String   @default("IN")
+  currency            String   @default("INR")
+  taxNumber           String?
+  phone               String?
+  email               String?
+  website             String?
+  financialYearStart  String   @default("04")  // month number: "01"=Jan, "04"=Apr
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 // ── 4. PAYMENT TERMS ──────────────────────────────────────────
@@ -1389,15 +1401,21 @@ model CountryTarget {
 
 // ── Opportunity Module ───────────────────────────────────────
 enum OpportunityStage {
+  // Owner's exact sales flow
+  OPPORTUNITY
+  DEMO
+  PROPOSAL
+  NEGOTIATION
+  FINALISATION
+  ORDER_RELEASE
+  CLOSED_WON
+  CLOSED_LOST
+  // Legacy (kept for existing data)
   PROSPECTING
   QUALIFICATION
   NEEDS_ANALYSIS
   VALUE_PROPOSITION
   DECISION_MAKERS
-  PROPOSAL
-  NEGOTIATION
-  CLOSED_WON
-  CLOSED_LOST
 }
 
 enum OpportunityType {
@@ -1411,7 +1429,7 @@ model Opportunity {
   id          String           @id @default(cuid())
   title       String
   description String?
-  stage       OpportunityStage @default(PROSPECTING)
+  stage       OpportunityStage @default(OPPORTUNITY)
   type        OpportunityType  @default(NEW_BUSINESS)
   priority    String           @default("MEDIUM")
   value       Float            @default(0)
@@ -1422,6 +1440,12 @@ model Opportunity {
   tags        String[]         @default([])
   notes       String?
   lostReason  String?
+  // Phase 1: tracking
+  convertedFromLeadId         String?
+  stageEnteredAt              Json    @default("{}")
+  country                     String?
+  decisionMakerName           String?
+  decisionMakerDesignation    String?
   deletedAt   DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt

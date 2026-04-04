@@ -40,8 +40,10 @@ interface Opp {
 }
 
 type OppStage =
-  | 'PROSPECTING' | 'QUALIFICATION' | 'NEEDS_ANALYSIS' | 'VALUE_PROPOSITION'
-  | 'DECISION_MAKERS' | 'PROPOSAL' | 'NEGOTIATION' | 'CLOSED_WON' | 'CLOSED_LOST';
+  | 'OPPORTUNITY' | 'DEMO' | 'PROPOSAL' | 'NEGOTIATION'
+  | 'FINALISATION' | 'ORDER_RELEASE' | 'CLOSED_WON' | 'CLOSED_LOST'
+  // legacy
+  | 'PROSPECTING' | 'QUALIFICATION' | 'NEEDS_ANALYSIS' | 'VALUE_PROPOSITION' | 'DECISION_MAKERS';
 
 type OppType    = 'NEW_BUSINESS' | 'EXISTING_BUSINESS' | 'RENEWAL' | 'UPGRADE';
 type Priority   = 'LOW' | 'MEDIUM' | 'HIGH';
@@ -60,16 +62,16 @@ interface KanbanCol {
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
+// Owner's exact sales flow
 const STAGES: { key: OppStage; label: string; color: string; prob: number }[] = [
-  { key: 'PROSPECTING',       label: 'Prospecting',        color: '#6366f1', prob: 10 },
-  { key: 'QUALIFICATION',     label: 'Qualification',      color: '#8b5cf6', prob: 20 },
-  { key: 'NEEDS_ANALYSIS',    label: 'Needs Analysis',     color: '#06b6d4', prob: 30 },
-  { key: 'VALUE_PROPOSITION', label: 'Value Proposition',  color: '#0ea5e9', prob: 45 },
-  { key: 'DECISION_MAKERS',   label: 'Decision Makers',    color: '#f59e0b', prob: 60 },
-  { key: 'PROPOSAL',          label: 'Proposal',           color: '#f97316', prob: 75 },
-  { key: 'NEGOTIATION',       label: 'Negotiation',        color: '#ec4899', prob: 90 },
-  { key: 'CLOSED_WON',        label: 'Closed Won',         color: '#10b981', prob: 100 },
-  { key: 'CLOSED_LOST',       label: 'Closed Lost',        color: '#ef4444', prob: 0  },
+  { key: 'OPPORTUNITY',   label: 'Opportunity',       color: '#6366f1', prob: 10  },
+  { key: 'DEMO',          label: 'Demo',              color: '#8b5cf6', prob: 25  },
+  { key: 'PROPOSAL',      label: 'Proposal',          color: '#06b6d4', prob: 45  },
+  { key: 'NEGOTIATION',   label: 'Negotiation',       color: '#f59e0b', prob: 65  },
+  { key: 'FINALISATION',  label: 'Finalisation',      color: '#f97316', prob: 85  },
+  { key: 'ORDER_RELEASE', label: 'Order Release',     color: '#a855f7', prob: 95  },
+  { key: 'CLOSED_WON',   label: 'Closed Won',        color: '#10b981', prob: 100 },
+  { key: 'CLOSED_LOST',  label: 'Closed Lost',       color: '#ef4444', prob: 0   },
 ];
 
 const STAGE_MAP = Object.fromEntries(STAGES.map((s) => [s.key, s]));
@@ -90,7 +92,7 @@ const PRIORITY_STYLES: Record<Priority, string> = {
 };
 
 const EMPTY_FORM = {
-  title: '', description: '', stage: 'PROSPECTING' as OppStage,
+  title: '', description: '', stage: 'OPPORTUNITY' as OppStage,
   type: 'NEW_BUSINESS' as OppType, priority: 'MEDIUM' as Priority,
   value: '', currency: 'USD', probability: '10',
   closeDate: '', source: '', tags: '', notes: '',

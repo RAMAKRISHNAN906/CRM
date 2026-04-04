@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bulkAssign = exports.convertLead = exports.deleteLead = exports.updateLead = exports.createLead = exports.getLead = exports.getLeads = void 0;
+exports.bulkAssign = exports.convertLead = exports.convertToOpportunity = exports.deleteLead = exports.updateLead = exports.createLead = exports.getLead = exports.getLeads = void 0;
 const prisma_1 = require("../config/prisma");
 const response_1 = require("../utils/response");
 const automation_service_1 = require("../services/automation.service");
@@ -206,6 +206,71 @@ const deleteLead = async (req, res, next) => {
     }
 };
 exports.deleteLead = deleteLead;
+// ── Convert Lead → Opportunity ────────────────────────────────────────────────
+const convertToOpportunity = async (req, res, next) => {
+    try {
+        const lead = await prisma_1.prisma.lead.findFirst({
+            where: { id: req.params.id, deletedAt: null },
+        });
+        if (!lead) {
+            (0, response_1.sendError)(res, 'Lead not found', 404);
+            return;
+        }
+        if (lead.convertedToOpportunityId) {
+            (0, response_1.sendError)(res, 'Lead already converted to opportunity', 409);
+            return;
+        }
+        const { title, value, closeDate, probability, notes } = req.body;
+        const now = new Date();
+        const opp = await prisma_1.prisma.opportunity.create({
+            data: {
+                title: title || `${lead.firstName} ${lead.lastName} — ${lead.company || 'Opportunity'}`,
+                description: lead.notes || undefined,
+                stage: 'OPPORTUNITY',
+                type: 'NEW_BUSINESS',
+                priority: 'MEDIUM',
+                value: value ?? lead.value ?? 0,
+                currency: lead.currency ?? 'INR',
+                probability: probability ?? 20,
+                closeDate: closeDate ? new Date(closeDate) : undefined,
+                source: lead.source,
+                notes: notes || undefined,
+                tags: [],
+                country: lead.country || undefined,
+                decisionMakerName: lead.decisionMakerName || undefined,
+                decisionMakerDesignation: lead.decisionMakerDesignation || undefined,
+                convertedFromLeadId: lead.id,
+                stageEnteredAt: { OPPORTUNITY: now.toISOString() },
+                ownerId: req.user.userId,
+            },
+            include: {
+                owner: { select: { id: true, name: true, avatar: true } },
+                contact: { select: { id: true, firstName: true, lastName: true } },
+            },
+        });
+        // Mark lead as converted
+        await prisma_1.prisma.lead.update({
+            where: { id: lead.id },
+            data: {
+                status: 'WON',
+                convertedAt: now,
+                convertedToOpportunityId: opp.id,
+            },
+        });
+        await prisma_1.prisma.activityLog.create({
+            data: {
+                action: 'LEAD_CONVERTED_OPPORTUNITY', entity: 'Lead', entityId: lead.id,
+                userId: req.user.userId, details: { opportunityId: opp.id, title: opp.title },
+            },
+        });
+        (0, response_1.sendSuccess)(res, { opportunity: opp, leadId: lead.id }, 'Lead converted to opportunity', 201);
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.convertToOpportunity = convertToOpportunity;
+// ── Convert Lead → Contact (existing) ────────────────────────────────────────
 const convertLead = async (req, res, next) => {
     try {
         const lead = await prisma_1.prisma.lead.findFirst({

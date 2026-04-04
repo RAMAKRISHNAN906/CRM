@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { preferencesService } from '../services/preferences.service';
@@ -10,10 +10,12 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { cn } from '../utils/cn';
-import { Palette, Layout, Bell, Shield, Sun, Moon, Monitor, Lock } from 'lucide-react';
+import { Palette, Layout, Bell, Shield, Sun, Moon, Monitor, Lock, Building2, Upload, Kanban } from 'lucide-react';
 import { AccentColor, Theme } from '../types';
 import toast from 'react-hot-toast';
 import { authService } from '../services/auth.service';
+import api from '../services/api';
+import { Trash2, Plus, GripVertical } from 'lucide-react';
 
 const ACCENT_COLORS: Array<{ id: AccentColor; label: string; hex: string }> = [
   { id: 'violet', label: 'Violet', hex: '#7c3aed' },
@@ -34,6 +36,8 @@ const THEMES: Array<{ id: Theme; label: string; icon: React.ReactNode }> = [
 const SETTINGS_TABS = [
   { id: 'appearance',    label: 'Appearance',    icon: <Palette size={16} /> },
   { id: 'modules',       label: 'Modules',        icon: <Layout size={16} /> },
+  { id: 'company',       label: 'Company Profile',icon: <Building2 size={16} /> },
+  { id: 'pipeline',      label: 'Pipeline Stages',icon: <Kanban size={16} /> },
   { id: 'notifications', label: 'Notifications',  icon: <Bell size={16} /> },
   { id: 'security',      label: 'Security',       icon: <Shield size={16} /> },
 ];
@@ -102,6 +106,111 @@ export const SettingsPage: React.FC = () => {
     } finally {
       setPasswordLoading(false);
     }
+  };
+
+  // ── Company Profile state ────────────────────────────────────────────────
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [companyForm, setCompanyForm] = useState({
+    companyName: '', address: '', city: '', state: '', zipCode: '',
+    country: 'IN', currency: 'INR', taxNumber: '', phone: '', email: '',
+    website: '', financialYearStart: '04', footerAddress: '',
+  });
+  const [companyLogoPreview, setCompanyLogoPreview] = useState<string>('');
+  const [companySaving, setCompanySaving] = useState(false);
+
+  const { data: companyData } = useQuery({
+    queryKey: ['company-settings'],
+    queryFn: () => api.get('/settings/company').then((r) => r.data?.data),
+    onSuccess: (d: any) => {
+      if (d) {
+        setCompanyForm({
+          companyName: d.companyName || '',
+          address: d.address || '',
+          city: d.city || '',
+          state: d.state || '',
+          zipCode: d.zipCode || '',
+          country: d.country || 'IN',
+          currency: d.currency || 'INR',
+          taxNumber: d.taxNumber || '',
+          phone: d.phone || '',
+          email: d.email || '',
+          website: d.website || '',
+          financialYearStart: d.financialYearStart || '04',
+          footerAddress: d.footerAddress || '',
+        });
+        if (d.logoUrl) setCompanyLogoPreview(d.logoUrl);
+      }
+    },
+  } as any);
+
+  const handleLogoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('Logo must be under 2MB'); return; }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target?.result as string;
+      setCompanyLogoPreview(base64);
+      try {
+        await api.post('/settings/company/logo', { logoBase64: base64 });
+        toast.success('Logo uploaded');
+      } catch { toast.error('Logo upload failed'); }
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleCompanySave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCompanySaving(true);
+    try {
+      await api.put('/settings/company', companyForm);
+      queryClient.invalidateQueries({ queryKey: ['company-settings'] });
+      toast.success('Company profile saved');
+    } catch { toast.error('Failed to save company profile'); }
+    finally { setCompanySaving(false); }
+  };
+
+  // ── Pipeline Stages state ────────────────────────────────────────────────
+  const [newStageName, setNewStageName]   = useState('');
+  const [newStageColor, setNewStageColor] = useState('#6366f1');
+  const [stagesSaving, setStagesSaving]   = useState(false);
+
+  const { data: pipelineStages = [], refetch: refetchStages } = useQuery<any[]>({
+    queryKey: ['pipeline-stages'],
+    queryFn: () => api.get('/pipeline/stages').then((r) => r.data?.data ?? []),
+  });
+
+  const addStage = async () => {
+    if (!newStageName.trim()) return;
+    setStagesSaving(true);
+    try {
+      await api.post('/pipeline/stages', {
+        name: newStageName.trim(),
+        color: newStageColor,
+        order: pipelineStages.length,
+        pipelineType: 'sales',
+        defaultProbability: 50,
+      });
+      setNewStageName('');
+      refetchStages();
+      toast.success('Stage added');
+    } catch { toast.error('Failed to add stage'); }
+    finally { setStagesSaving(false); }
+  };
+
+  const updateStage = async (id: string, data: any) => {
+    try {
+      await api.put(`/pipeline/stages/${id}`, data);
+      refetchStages();
+    } catch { toast.error('Failed to update stage'); }
+  };
+
+  const deleteStage = async (id: string) => {
+    try {
+      await api.delete(`/pipeline/stages/${id}`);
+      refetchStages();
+      toast.success('Stage deleted');
+    } catch { toast.error('Failed to delete stage'); }
   };
 
   return (
@@ -204,6 +313,187 @@ export const SettingsPage: React.FC = () => {
                   onSave={handleModulesSave}
                   isLoading={updateMutation.isPending}
                 />
+              </Card>
+            )}
+
+            {activeTab === 'company' && (
+              <Card>
+                <CardHeader title="Company Profile" subtitle="Your company details used in quotes, invoices and reports" icon={<Building2 size={16} />} />
+                <form onSubmit={handleCompanySave} className="space-y-5">
+                  {/* Logo upload */}
+                  <div className="flex items-center gap-5">
+                    <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-surface-secondary overflow-hidden shrink-0">
+                      {companyLogoPreview
+                        ? <img src={companyLogoPreview} alt="Logo" className="w-full h-full object-contain p-1" />
+                        : <Building2 size={28} className="text-gray-600" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white mb-1">Company Logo</p>
+                      <p className="text-xs text-gray-500 mb-2">PNG, JPG or SVG · Max 2MB · Used in PDF quotes & invoices</p>
+                      <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                      <div className="flex gap-2">
+                        <Button type="button" size="sm" variant="outline" icon={<Upload size={13} />}
+                          onClick={() => logoInputRef.current?.click()}>
+                          Upload Logo
+                        </Button>
+                        {companyLogoPreview && (
+                          <Button type="button" size="sm" variant="ghost"
+                            onClick={() => setCompanyLogoPreview('')}>
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Company name */}
+                  <Input label="Company Name *" required value={companyForm.companyName}
+                    onChange={(e) => setCompanyForm({ ...companyForm, companyName: e.target.value })} />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input label="Phone" value={companyForm.phone}
+                      onChange={(e) => setCompanyForm({ ...companyForm, phone: e.target.value })} />
+                    <Input label="Email" type="email" value={companyForm.email}
+                      onChange={(e) => setCompanyForm({ ...companyForm, email: e.target.value })} />
+                  </div>
+                  <Input label="Website" value={companyForm.website}
+                    onChange={(e) => setCompanyForm({ ...companyForm, website: e.target.value })} />
+                  <Input label="Tax / GST Number" value={companyForm.taxNumber}
+                    onChange={(e) => setCompanyForm({ ...companyForm, taxNumber: e.target.value })} />
+
+                  {/* Address */}
+                  <div className="rounded-xl border border-border/50 bg-surface-secondary/40 p-3 space-y-3">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Address (appears in quote footer)</p>
+                    <Input label="Street Address" value={companyForm.address}
+                      onChange={(e) => setCompanyForm({ ...companyForm, address: e.target.value })} />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input label="City" value={companyForm.city}
+                        onChange={(e) => setCompanyForm({ ...companyForm, city: e.target.value })} />
+                      <Input label="State" value={companyForm.state}
+                        onChange={(e) => setCompanyForm({ ...companyForm, state: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input label="ZIP / Postal Code" value={companyForm.zipCode}
+                        onChange={(e) => setCompanyForm({ ...companyForm, zipCode: e.target.value })} />
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Country</label>
+                        <select value={companyForm.country}
+                          onChange={(e) => setCompanyForm({ ...companyForm, country: e.target.value })}
+                          className="w-full px-3 py-2.5 rounded-xl border border-border bg-surface-secondary text-sm text-white focus:outline-none focus:border-accent">
+                          <option value="IN">🇮🇳 India</option>
+                          <option value="US">🇺🇸 United States</option>
+                          <option value="AE">🇦🇪 UAE</option>
+                          <option value="GB">🇬🇧 United Kingdom</option>
+                          <option value="AU">🇦🇺 Australia</option>
+                          <option value="SA">🇸🇦 Saudi Arabia</option>
+                          <option value="QA">🇶🇦 Qatar</option>
+                          <option value="OTHER">🌍 Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <Input label="Full Footer Address (overrides above for PDFs)" value={companyForm.footerAddress}
+                      placeholder="123 Business Park, Chennai, TN 600001, India"
+                      onChange={(e) => setCompanyForm({ ...companyForm, footerAddress: e.target.value })} />
+                  </div>
+
+                  {/* Financial Year */}
+                  <div className="rounded-xl border border-border/50 bg-surface-secondary/40 p-3 space-y-3">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Financial Year</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Financial Year Start Month</label>
+                        <select value={companyForm.financialYearStart}
+                          onChange={(e) => setCompanyForm({ ...companyForm, financialYearStart: e.target.value })}
+                          className="w-full px-3 py-2.5 rounded-xl border border-border bg-surface-secondary text-sm text-white focus:outline-none focus:border-accent">
+                          <option value="01">January (Jan–Dec)</option>
+                          <option value="04">April (Apr–Mar) — India</option>
+                          <option value="07">July (Jul–Jun) — Australia</option>
+                          <option value="10">October (Oct–Sep)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Currency</label>
+                        <select value={companyForm.currency}
+                          onChange={(e) => setCompanyForm({ ...companyForm, currency: e.target.value })}
+                          className="w-full px-3 py-2.5 rounded-xl border border-border bg-surface-secondary text-sm text-white focus:outline-none focus:border-accent">
+                          {['INR','USD','EUR','GBP','AED','SAR','QAR','AUD','CAD'].map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button type="submit" loading={companySaving} icon={<Building2 size={14} />}>
+                      Save Company Profile
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            )}
+
+            {activeTab === 'pipeline' && (
+              <Card>
+                <CardHeader title="Pipeline Stages" subtitle="Define custom stages for your sales pipeline" icon={<Kanban size={16} />} />
+                <div className="space-y-4">
+                  {/* Existing stages */}
+                  <div className="space-y-2">
+                    {pipelineStages.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">No custom stages yet. Add your first stage below.</p>
+                    )}
+                    {pipelineStages.map((stage: any, idx: number) => (
+                      <div key={stage.id}
+                        className="flex items-center gap-3 p-3 rounded-xl border border-border bg-surface-secondary">
+                        <GripVertical size={16} className="text-gray-600 cursor-grab shrink-0" />
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ background: stage.color }} />
+                        <input
+                          value={stage.name}
+                          onChange={(e) => updateStage(stage.id, { name: e.target.value })}
+                          className="flex-1 bg-transparent text-sm text-white focus:outline-none"
+                        />
+                        <input type="color" value={stage.color || '#6366f1'}
+                          onChange={(e) => updateStage(stage.id, { color: e.target.value })}
+                          className="w-7 h-7 rounded-lg border-0 cursor-pointer bg-transparent" />
+                        <input type="number" min={0} max={100} value={stage.defaultProbability || 0}
+                          onChange={(e) => updateStage(stage.id, { defaultProbability: parseInt(e.target.value) })}
+                          className="w-14 bg-surface-secondary border border-border rounded-lg px-2 py-1 text-xs text-gray-300 text-center focus:outline-none"
+                          title="Default probability %" />
+                        <span className="text-xs text-gray-600">%</span>
+                        <button onClick={() => deleteStage(stage.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-600 hover:text-red-400 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add new stage */}
+                  <div className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-border">
+                    <input type="color" value={newStageColor}
+                      onChange={(e) => setNewStageColor(e.target.value)}
+                      className="w-7 h-7 rounded-lg border-0 cursor-pointer bg-transparent shrink-0" />
+                    <input
+                      value={newStageName}
+                      onChange={(e) => setNewStageName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && addStage()}
+                      placeholder="Stage name (e.g. Site Visit, Demo, Negotiation)..."
+                      className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 focus:outline-none"
+                    />
+                    <Button size="sm" onClick={addStage} disabled={stagesSaving || !newStageName.trim()}
+                      icon={<Plus size={14} />}>
+                      Add
+                    </Button>
+                  </div>
+
+                  <div className="rounded-xl border border-border/50 bg-surface-secondary/20 p-3">
+                    <p className="text-xs text-gray-500">
+                      These stages appear in the <span className="text-gray-300">Pipeline Kanban board</span>.
+                      The % value is auto-filled when a deal enters that stage.
+                      You can have 3–10 stages — use as many as your sales process needs.
+                    </p>
+                  </div>
+                </div>
               </Card>
             )}
 

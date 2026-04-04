@@ -199,6 +199,69 @@ export const deleteLead = async (req: Request, res: Response, next: NextFunction
   } catch (error) { next(error); }
 };
 
+// ── Convert Lead → Opportunity ────────────────────────────────────────────────
+export const convertToOpportunity = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const lead = await prisma.lead.findFirst({
+      where: { id: req.params.id, deletedAt: null },
+    });
+    if (!lead) { sendError(res, 'Lead not found', 404); return; }
+    if (lead.convertedToOpportunityId) {
+      sendError(res, 'Lead already converted to opportunity', 409); return;
+    }
+
+    const { title, value, closeDate, probability, notes } = req.body;
+
+    const now = new Date();
+    const opp = await (prisma as any).opportunity.create({
+      data: {
+        title:               title || `${lead.firstName} ${lead.lastName} — ${lead.company || 'Opportunity'}`,
+        description:         lead.notes || undefined,
+        stage:               'OPPORTUNITY',
+        type:                'NEW_BUSINESS',
+        priority:            'MEDIUM',
+        value:               value ?? lead.value ?? 0,
+        currency:            lead.currency ?? 'INR',
+        probability:         probability ?? 20,
+        closeDate:           closeDate ? new Date(closeDate) : undefined,
+        source:              lead.source,
+        notes:               notes || undefined,
+        tags:                [],
+        country:             (lead as any).country || undefined,
+        decisionMakerName:   (lead as any).decisionMakerName || undefined,
+        decisionMakerDesignation: (lead as any).decisionMakerDesignation || undefined,
+        convertedFromLeadId: lead.id,
+        stageEnteredAt:      { OPPORTUNITY: now.toISOString() },
+        ownerId:             req.user!.userId,
+      },
+      include: {
+        owner:   { select: { id: true, name: true, avatar: true } },
+        contact: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    // Mark lead as converted
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        status: 'WON',
+        convertedAt: now,
+        convertedToOpportunityId: opp.id,
+      } as any,
+    });
+
+    await prisma.activityLog.create({
+      data: {
+        action: 'LEAD_CONVERTED_OPPORTUNITY', entity: 'Lead', entityId: lead.id,
+        userId: req.user!.userId, details: { opportunityId: opp.id, title: opp.title },
+      },
+    });
+
+    sendSuccess(res, { opportunity: opp, leadId: lead.id }, 'Lead converted to opportunity', 201);
+  } catch (error) { next(error); }
+};
+
+// ── Convert Lead → Contact (existing) ────────────────────────────────────────
 export const convertLead = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const lead = await prisma.lead.findFirst({

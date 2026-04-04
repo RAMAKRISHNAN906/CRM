@@ -143,11 +143,8 @@ export const CountryAnalyticsPage: React.FC = () => {
   const targetMap = Object.fromEntries(targets.map((t) => [t.country.toLowerCase(), t]));
   const analyticsMap = Object.fromEntries(analytics.map((r) => [r.country.toLowerCase(), r]));
 
-  // All countries = union of targets + analytics
-  const allCountries = Array.from(new Set([
-    ...targets.map((t) => t.country),
-    ...analytics.map((r) => r.country),
-  ]));
+  // Only show countries that have a target entry (no orphan analytics rows)
+  const allCountries = targets.map((t) => t.country);
 
   const merged = allCountries.map((country) => {
     const t = targetMap[country.toLowerCase()];
@@ -394,11 +391,11 @@ export const CountryAnalyticsPage: React.FC = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => row.targetObj ? openEdit(row.targetObj) : openAdd()}
+                              onClick={() => row.targetObj && openEdit(row.targetObj)}
                               className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-violet-400 transition-colors"
-                              title={row.hasTarget ? 'Edit target' : 'Add target'}
+                              title="Edit"
                             >
-                              {row.hasTarget ? <Pencil size={14} /> : <Plus size={14} />}
+                              <Pencil size={14} />
                             </button>
                             {row.hasTarget && (
                               <button

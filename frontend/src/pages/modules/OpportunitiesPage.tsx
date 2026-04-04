@@ -5,9 +5,10 @@ import {
   Lightbulb, Plus, Pencil, Trash2, X, Search, LayoutList, Kanban,
   DollarSign, TrendingUp, Target, Trophy, ChevronDown, ChevronUp,
   Calendar, Users, Building2, Tag, Star, AlertCircle, Filter,
-  MoreVertical, ArrowRight, CheckCircle2, XCircle,
+  MoreVertical, ArrowRight, CheckCircle2, XCircle, Swords, CalendarClock,
 } from 'lucide-react';
 import { opportunitiesService } from '../../services/opportunities.service';
+import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
@@ -17,6 +18,16 @@ import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+interface Competitor {
+  id: string;
+  name: string;
+  phone?: string;
+  website?: string;
+  strengths?: string;
+  weaknesses?: string;
+  notes?: string;
+}
+
 interface Opp {
   id: string;
   title: string;
@@ -28,6 +39,7 @@ interface Opp {
   currency: string;
   probability: number;
   closeDate?: string;
+  followUpDate?: string;
   source?: string;
   tags: string[];
   notes?: string;
@@ -37,6 +49,7 @@ interface Opp {
   assignee?: { id: string; name: string; avatar?: string };
   contact?:  { id: string; firstName: string; lastName: string; email?: string };
   account?:  { id: string; name: string };
+  competitors?: Competitor[];
 }
 
 type OppStage =
@@ -95,7 +108,7 @@ const EMPTY_FORM = {
   title: '', description: '', stage: 'OPPORTUNITY' as OppStage,
   type: 'NEW_BUSINESS' as OppType, priority: 'MEDIUM' as Priority,
   value: '', currency: 'USD', probability: '10',
-  closeDate: '', source: '', tags: '', notes: '',
+  closeDate: '', followUpDate: '', source: '', tags: '', notes: '',
   contactId: '', accountId: '', assigneeId: '',
 };
 
@@ -122,6 +135,11 @@ export const OpportunitiesPage: React.FC = () => {
   const [sortKey, setSortKey]   = useState<'value' | 'probability' | 'closeDate' | 'createdAt'>('createdAt');
   const [sortAsc, setSortAsc]   = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  // ── Competitor state ────────────────────────────────────────────────────────
+  const EMPTY_COMP = { name: '', phone: '', website: '', strengths: '', weaknesses: '', notes: '' };
+  const [compForm, setCompForm] = useState(EMPTY_COMP);
+  const [compSaving, setCompSaving] = useState(false);
 
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data: statsData } = useQuery<Stats>({
@@ -179,6 +197,27 @@ export const OpportunitiesPage: React.FC = () => {
     onError: () => toast.error('Failed to delete'),
   });
 
+  // ── Competitor helpers ─────────────────────────────────────────────────────
+  const addCompetitor = async (opportunityId: string) => {
+    if (!compForm.name.trim()) return;
+    setCompSaving(true);
+    try {
+      await api.post('/competitors', { ...compForm, opportunityId });
+      invalidate();
+      setCompForm(EMPTY_COMP);
+      toast.success('Competitor added');
+    } catch { toast.error('Failed to add competitor'); }
+    finally { setCompSaving(false); }
+  };
+
+  const removeCompetitor = async (id: string) => {
+    try {
+      await api.delete(`/competitors/${id}`);
+      invalidate();
+      toast.success('Competitor removed');
+    } catch { toast.error('Failed to remove competitor'); }
+  };
+
   // ── Modal helpers ──────────────────────────────────────────────────────────
   const openAdd = () => {
     setEditing(null);
@@ -193,7 +232,8 @@ export const OpportunitiesPage: React.FC = () => {
       stage: o.stage, type: o.type, priority: o.priority,
       value: String(o.value), currency: o.currency,
       probability: String(o.probability),
-      closeDate: o.closeDate ? o.closeDate.split('T')[0] : '',
+      closeDate:   o.closeDate   ? o.closeDate.split('T')[0]   : '',
+      followUpDate: o.followUpDate ? o.followUpDate.split('T')[0] : '',
       source: o.source ?? '', tags: o.tags.join(', '),
       notes: o.notes ?? '',
       contactId: o.contact?.id ?? '',
@@ -203,7 +243,7 @@ export const OpportunitiesPage: React.FC = () => {
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setEditing(null); setForm(EMPTY_FORM); };
+  const closeModal = () => { setShowModal(false); setEditing(null); setForm(EMPTY_FORM); setCompForm(EMPTY_COMP); };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,8 +256,9 @@ export const OpportunitiesPage: React.FC = () => {
       value:       parseFloat(form.value) || 0,
       currency:    form.currency,
       probability: parseInt(form.probability) || 0,
-      closeDate:   form.closeDate || undefined,
-      source:      form.source || undefined,
+      closeDate:    form.closeDate    || undefined,
+      followUpDate: form.followUpDate || undefined,
+      source:       form.source || undefined,
       tags:        form.tags.split(',').map((t) => t.trim()).filter(Boolean),
       notes:       form.notes.trim() || undefined,
       contactId:   form.contactId || undefined,
@@ -447,11 +488,34 @@ export const OpportunitiesPage: React.FC = () => {
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex items-center gap-1.5">
-                                {isPast && <AlertCircle size={13} className="text-red-400" />}
-                                <span className={`text-sm ${isPast ? 'text-red-400' : 'text-gray-300'}`}>
-                                  {opp.closeDate ? formatDate(opp.closeDate) : '—'}
-                                </span>
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1.5">
+                                  {isPast && <AlertCircle size={13} className="text-red-400" />}
+                                  <span className={`text-sm ${isPast ? 'text-red-400' : 'text-gray-300'}`}>
+                                    {opp.closeDate ? formatDate(opp.closeDate) : '—'}
+                                  </span>
+                                </div>
+                                {opp.followUpDate && (() => {
+                                  const fd = new Date(opp.followUpDate);
+                                  const diffD = Math.ceil((fd.getTime() - Date.now()) / 86400000);
+                                  const cls = diffD < 0 ? 'text-red-400' : diffD <= 1 ? 'text-orange-400' : diffD <= 3 ? 'text-yellow-400' : 'text-gray-500';
+                                  return (
+                                    <span className={`flex items-center gap-1 text-xs ${cls}`}>
+                                      <CalendarClock size={10} />
+                                      {diffD < 0 ? `${Math.abs(diffD)}d overdue` : diffD === 0 ? 'Follow-up today' : diffD === 1 ? 'Follow-up tomorrow' : `Follow-up ${formatDate(opp.followUpDate)}`}
+                                    </span>
+                                  );
+                                })()}
+                                {opp.competitors && opp.competitors.length > 0 && (
+                                  <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                                    <Swords size={10} className="text-red-400 shrink-0" />
+                                    {opp.competitors.map((c) => (
+                                      <span key={c.id} className="text-xs px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">
+                                        {c.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="px-4 py-3">
@@ -692,11 +756,21 @@ export const OpportunitiesPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Close Date */}
-            <div>
-              <label className="block text-xs text-gray-400 mb-1">Expected Close Date</label>
-              <Input type="date" value={form.closeDate}
-                onChange={(e) => setForm({ ...form, closeDate: e.target.value })} />
+            {/* Close Date + Follow-up Date */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Expected Close Date</label>
+                <Input type="date" value={form.closeDate}
+                  onChange={(e) => setForm({ ...form, closeDate: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+                  Follow-up Date
+                  <span className="text-orange-400 text-xs">(1d &amp; 3d reminders)</span>
+                </label>
+                <Input type="date" value={form.followUpDate}
+                  onChange={(e) => setForm({ ...form, followUpDate: e.target.value })} />
+              </div>
             </div>
 
             {/* Source */}
@@ -733,6 +807,68 @@ export const OpportunitiesPage: React.FC = () => {
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 className="w-full px-3 py-2.5 rounded-xl border border-border bg-surface-secondary text-sm text-white focus:outline-none focus:border-accent resize-none" />
             </div>
+
+            {/* Competitors — only shown when editing an existing opportunity */}
+            {editing && (
+              <div className="col-span-2">
+                <div className="rounded-xl border border-border/60 bg-surface-secondary/30 p-3 space-y-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-2">
+                    <Swords size={13} className="text-red-400" /> Competitors
+                  </p>
+
+                  {/* Existing competitors */}
+                  {(editing.competitors && editing.competitors.length > 0) ? (
+                    <div className="space-y-1.5">
+                      {editing.competitors.map((c) => (
+                        <div key={c.id} className="flex items-start gap-2 p-2 rounded-lg bg-surface-secondary border border-border/40">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white">{c.name}</p>
+                            <div className="flex flex-wrap gap-2 mt-0.5 text-xs text-gray-500">
+                              {c.phone && <span>📞 {c.phone}</span>}
+                              {c.website && <a href={c.website} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline truncate">{c.website}</a>}
+                            </div>
+                            {c.strengths && <p className="text-xs text-green-400 mt-0.5">✓ {c.strengths}</p>}
+                            {c.weaknesses && <p className="text-xs text-red-400 mt-0.5">✗ {c.weaknesses}</p>}
+                          </div>
+                          <button onClick={() => removeCompetitor(c.id)}
+                            className="p-1 rounded hover:bg-red-500/10 text-gray-600 hover:text-red-400 transition-colors shrink-0">
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-600">No competitors linked yet.</p>
+                  )}
+
+                  {/* Add competitor inline */}
+                  <div className="space-y-2 pt-1 border-t border-border/40">
+                    <p className="text-xs text-gray-500">Add competitor</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input placeholder="Competitor name *" value={compForm.name}
+                        onChange={(e) => setCompForm({ ...compForm, name: e.target.value })} />
+                      <Input placeholder="Phone / WhatsApp" value={compForm.phone}
+                        onChange={(e) => setCompForm({ ...compForm, phone: e.target.value })} />
+                    </div>
+                    <Input placeholder="Website" value={compForm.website}
+                      onChange={(e) => setCompForm({ ...compForm, website: e.target.value })} />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input placeholder="Their strengths" value={compForm.strengths}
+                        onChange={(e) => setCompForm({ ...compForm, strengths: e.target.value })} />
+                      <Input placeholder="Their weaknesses" value={compForm.weaknesses}
+                        onChange={(e) => setCompForm({ ...compForm, weaknesses: e.target.value })} />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="button" size="sm" icon={<Plus size={13} />}
+                        disabled={compSaving || !compForm.name.trim()}
+                        onClick={() => addCompetitor(editing.id)}>
+                        Add Competitor
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-border">

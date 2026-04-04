@@ -344,6 +344,7 @@ model Lead {
   decisionMakerName           String?
   decisionMakerDesignation    String?
   whatsappNumber              String?
+  followUpDate                DateTime?
   deletedAt       DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
@@ -1271,10 +1272,13 @@ model Competitor {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  dealId String?
-  deal   Deal?   @relation("DealCompetitors", fields: [dealId], references: [id])
+  dealId        String?
+  deal          Deal?        @relation("DealCompetitors",        fields: [dealId],        references: [id])
+  opportunityId String?
+  opportunity   Opportunity? @relation("OpportunityCompetitors", fields: [opportunityId], references: [id])
 
   @@index([dealId])
+  @@index([opportunityId])
 }
 
 // ── 10. SUBTASKS ──────────────────────────────────────────────
@@ -1446,6 +1450,7 @@ model Opportunity {
   country                     String?
   decisionMakerName           String?
   decisionMakerDesignation    String?
+  followUpDate                DateTime?
   deletedAt   DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
@@ -1455,9 +1460,10 @@ model Opportunity {
   assigneeId String?
   assignee   User?    @relation("OpportunityAssignee", fields: [assigneeId], references: [id])
   contactId  String?
-  contact    Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contact    Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
   accountId  String?
-  account    Account? @relation(fields: [accountId], references: [id])
+  account    Account?     @relation(fields: [accountId], references: [id])
+  competitors Competitor[] @relation("OpportunityCompetitors")
 
   @@index([stage])
   @@index([ownerId])

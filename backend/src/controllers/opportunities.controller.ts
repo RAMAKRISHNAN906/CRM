@@ -3,10 +3,11 @@ import { prisma } from '../config/prisma';
 import { sendSuccess, sendError, sendPaginated } from '../utils/response';
 
 const include = {
-  owner:    { select: { id: true, name: true, avatar: true } },
-  assignee: { select: { id: true, name: true, avatar: true } },
-  contact:  { select: { id: true, firstName: true, lastName: true, email: true } },
-  account:  { select: { id: true, name: true } },
+  owner:       { select: { id: true, name: true, avatar: true } },
+  assignee:    { select: { id: true, name: true, avatar: true } },
+  contact:     { select: { id: true, firstName: true, lastName: true, email: true } },
+  account:     { select: { id: true, name: true } },
+  competitors: true,
 };
 
 // ── List ──────────────────────────────────────────────────────────────────────
@@ -53,7 +54,9 @@ export const createOpportunity = async (req: Request, res: Response, next: NextF
   try {
     const {
       title, description, stage, type, priority, value, currency,
-      probability, closeDate, source, tags, notes, contactId, accountId, assigneeId,
+      probability, closeDate, followUpDate, source, tags, notes,
+      country, decisionMakerName, decisionMakerDesignation,
+      contactId, accountId, assigneeId,
     } = req.body;
 
     const opp = await prisma.opportunity.create({
@@ -65,7 +68,9 @@ export const createOpportunity = async (req: Request, res: Response, next: NextF
         probability: probability ?? 10,
         source, notes,
         tags: tags ?? [],
-        closeDate: closeDate ? new Date(closeDate) : undefined,
+        closeDate:   closeDate   ? new Date(closeDate)   : undefined,
+        followUpDate: followUpDate ? new Date(followUpDate) : undefined,
+        country, decisionMakerName, decisionMakerDesignation,
         ownerId:    req.user!.userId,
         assigneeId: assigneeId || undefined,
         contactId:  contactId  || undefined,
@@ -82,7 +87,9 @@ export const updateOpportunity = async (req: Request, res: Response, next: NextF
   try {
     const {
       title, description, stage, type, priority, value, currency,
-      probability, closeDate, source, tags, notes, lostReason, contactId, accountId, assigneeId,
+      probability, closeDate, followUpDate, source, tags, notes, lostReason,
+      country, decisionMakerName, decisionMakerDesignation,
+      contactId, accountId, assigneeId,
     } = req.body;
 
     const opp = await prisma.opportunity.update({
@@ -91,7 +98,9 @@ export const updateOpportunity = async (req: Request, res: Response, next: NextF
         title, description, stage, type, priority, value, currency,
         probability, source, notes, lostReason,
         tags: tags ?? undefined,
-        closeDate:  closeDate  ? new Date(closeDate) : null,
+        closeDate:    closeDate    ? new Date(closeDate)    : null,
+        followUpDate: followUpDate ? new Date(followUpDate) : null,
+        country, decisionMakerName, decisionMakerDesignation,
         assigneeId: assigneeId || null,
         contactId:  contactId  || null,
         accountId:  accountId  || null,

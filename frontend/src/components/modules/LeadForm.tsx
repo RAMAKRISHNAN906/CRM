@@ -41,10 +41,11 @@ const schema = z.object({
   country:                  z.string().optional(),
   decisionMakerName:        z.string().optional(),
   decisionMakerDesignation: z.string().optional(),
-  status: z.enum(['NEW','CONTACTED','QUALIFIED','PROPOSAL','NEGOTIATION','WON','LOST','CONVERTED']).default('NEW'),
-  source: z.enum(['WEBSITE','REFERRAL','SOCIAL_MEDIA','EMAIL_CAMPAIGN','COLD_CALL','TRADE_SHOW','OTHER']),
-  value:  z.number().min(0).optional(),
-  notes:  z.string().optional(),
+  status:       z.enum(['NEW','CONTACTED','QUALIFIED','PROPOSAL','NEGOTIATION','WON','LOST','CONVERTED']).default('NEW'),
+  source:       z.enum(['WEBSITE','REFERRAL','SOCIAL_MEDIA','EMAIL_CAMPAIGN','COLD_CALL','TRADE_SHOW','OTHER']),
+  value:        z.number().min(0).optional(),
+  followUpDate: z.string().optional(),
+  notes:        z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -93,10 +94,11 @@ export const LeadForm: React.FC<LeadFormProps> = ({ defaultValues, onSubmit, onC
       country:                  defaultValues?.country                  || '',
       decisionMakerName:        defaultValues?.decisionMakerName        || '',
       decisionMakerDesignation: defaultValues?.decisionMakerDesignation || '',
-      status: defaultValues?.status || 'NEW',
-      source: defaultValues?.source || 'OTHER',
-      value:  defaultValues?.value  || 0,
-      notes:  defaultValues?.notes  || '',
+      status:       defaultValues?.status       || 'NEW',
+      source:       defaultValues?.source       || 'OTHER',
+      value:        defaultValues?.value        || 0,
+      followUpDate: defaultValues?.followUpDate ? defaultValues.followUpDate.slice(0, 10) : '',
+      notes:        defaultValues?.notes        || '',
     },
   });
 
@@ -131,7 +133,11 @@ export const LeadForm: React.FC<LeadFormProps> = ({ defaultValues, onSubmit, onC
         <Select label="Status" options={STATUS_OPTIONS} {...register('status')} />
         <Select label="Source" options={SOURCE_OPTIONS} {...register('source')} />
       </div>
-      <Input label="Deal Value" type="number" min="0" step="100" {...register('value', { valueAsNumber: true })} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input label="Deal Value" type="number" min="0" step="100" {...register('value', { valueAsNumber: true })} />
+        <Input label="Follow-up Date" type="date" {...register('followUpDate')}
+          className="[color-scheme:dark]" />
+      </div>
       <Textarea label="Notes" rows={3} placeholder="Add notes about this lead..." {...register('notes')} />
 
       <div className="flex items-center justify-end gap-3 pt-2">

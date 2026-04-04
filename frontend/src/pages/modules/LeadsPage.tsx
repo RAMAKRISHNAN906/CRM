@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Plus, Lightbulb, X, Globe, User, Flag } from 'lucide-react';
+import { UserPlus, Plus, Lightbulb, X, Globe, User, Flag, CalendarClock } from 'lucide-react';
 import { leadsService } from '../../services/leads.service';
 import api from '../../services/api';
 import { Lead } from '../../types';
@@ -163,6 +163,26 @@ export const LeadsPage: React.FC = () => {
       header: 'Value',
       sortable: true,
       render: (val) => val ? <span className="font-medium text-green-400">{formatCurrency(val)}</span> : <span className="text-gray-600">—</span>,
+    },
+    {
+      key: 'followUpDate',
+      header: 'Follow-up',
+      render: (val) => {
+        if (!val) return <span className="text-gray-600 text-xs">—</span>;
+        const date    = new Date(val);
+        const today   = new Date();
+        const diffMs  = date.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        const overdue  = diffDays < 0;
+        const urgent   = diffDays >= 0 && diffDays <= 1;
+        const soon     = diffDays > 1 && diffDays <= 3;
+        return (
+          <span className={`flex items-center gap-1 text-xs font-medium ${overdue ? 'text-red-400' : urgent ? 'text-orange-400' : soon ? 'text-yellow-400' : 'text-gray-400'}`}>
+            <CalendarClock size={11} />
+            {overdue ? `${Math.abs(diffDays)}d overdue` : diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : formatDate(val)}
+          </span>
+        );
+      },
     },
     {
       key: 'createdAt',

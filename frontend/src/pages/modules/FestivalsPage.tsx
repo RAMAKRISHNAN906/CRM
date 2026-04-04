@@ -41,7 +41,7 @@ const AddCustomerForm: React.FC<{ onDone: () => void }> = ({ onDone }) => {
       toast.success(`${form.name} added`);
       nameRef.current?.focus();
     },
-    onError: (e: any) => toast.error(e.response?.data?.error ?? 'Error'),
+    onError: (e: any) => toast.error(e.response?.data?.error ?? e.response?.data?.message ?? 'Failed to add customer'),
   });
 
   return (

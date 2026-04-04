@@ -870,44 +870,36 @@ export const OpportunitiesPage: React.FC = () => {
       </Modal>
 
       {/* ── Stage quick-move portal popup ── */}
-      <AnimatePresence>
-        {openMenu && (() => {
-          const opp = opps.find((o) => o.id === openMenu.id);
-          if (!opp) return null;
-          // Smart positioning: flip left if too close to right edge
-          const popupW = 208;
-          const left = openMenu.x - popupW < 8 ? openMenu.x : openMenu.x - popupW;
-          const top  = openMenu.y + 200 > window.innerHeight ? openMenu.y - 220 : openMenu.y;
-          return createPortal(
-            <>
-              {/* backdrop */}
-              <div className="fixed inset-0 z-[998]" onClick={() => setOpenMenu(null)} />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                style={{ position: 'fixed', top, left, width: popupW, zIndex: 999 }}
-                className="bg-[#1a1a2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
-                onClick={(e) => e.stopPropagation()}>
-                <p className="px-3 py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wider border-b border-white/10 flex items-center gap-2">
-                  <ArrowRight size={12} /> Move to Stage
-                </p>
-                {STAGES.filter((s) => s.key !== opp.stage).map((s) => (
-                  <button key={s.key}
-                    onClick={() => { handleStageMove(opp, s.key); setOpenMenu(null); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition-colors text-left">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-                    <span className="flex-1">{s.label}</span>
-                    {s.key === 'CLOSED_WON'  && <CheckCircle2 size={13} className="text-green-400" />}
-                    {s.key === 'CLOSED_LOST' && <XCircle     size={13} className="text-red-400"   />}
-                  </button>
-                ))}
-              </motion.div>
-            </>,
-            document.body
-          );
-        })()}
-      </AnimatePresence>
+      {openMenu && (() => {
+        const opp = opps.find((o) => o.id === openMenu.id);
+        if (!opp) return null;
+        const popupW = 216;
+        const left = openMenu.x - popupW < 8 ? openMenu.x : openMenu.x - popupW;
+        const top  = openMenu.y + 260 > window.innerHeight ? openMenu.y - 270 : openMenu.y;
+        return createPortal(
+          <>
+            <div className="fixed inset-0 z-[998]" onClick={() => setOpenMenu(null)} />
+            <div
+              style={{ position: 'fixed', top, left, width: popupW, zIndex: 999 }}
+              className="bg-[#16162a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+              <p className="px-3 py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wider border-b border-white/10 flex items-center gap-2">
+                <ArrowRight size={12} /> Move to Stage
+              </p>
+              {STAGES.filter((s) => s.key !== opp.stage).map((s) => (
+                <button key={s.key}
+                  onClick={() => { handleStageMove(opp, s.key); setOpenMenu(null); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition-colors text-left">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                  <span className="flex-1">{s.label}</span>
+                  {s.key === 'CLOSED_WON'  && <CheckCircle2 size={13} className="text-green-400" />}
+                  {s.key === 'CLOSED_LOST' && <XCircle      size={13} className="text-red-400"   />}
+                </button>
+              ))}
+            </div>
+          </>,
+          document.body
+        );
+      })()}
 
       {/* ── Lost Reason Modal ── */}
       <AnimatePresence>

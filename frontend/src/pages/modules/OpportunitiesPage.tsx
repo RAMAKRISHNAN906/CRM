@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -134,12 +135,19 @@ export const OpportunitiesPage: React.FC = () => {
   const [filterType, setFilterType]       = useState('');
   const [sortKey, setSortKey]   = useState<'value' | 'probability' | 'closeDate' | 'createdAt'>('createdAt');
   const [sortAsc, setSortAsc]   = useState(false);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [openMenu, setOpenMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
   // ── Competitor state ────────────────────────────────────────────────────────
   const EMPTY_COMP = { name: '', phone: '', website: '', strengths: '', weaknesses: '', notes: '' };
   const [compForm, setCompForm] = useState(EMPTY_COMP);
   const [compSaving, setCompSaving] = useState(false);
+
+  // Close stage menu on scroll
+  useEffect(() => {
+    const close = () => setOpenMenu(null);
+    window.addEventListener('scroll', close, true);
+    return () => window.removeEventListener('scroll', close, true);
+  }, []);
 
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data: statsData } = useQuery<Stats>({
@@ -539,7 +547,12 @@ export const OpportunitiesPage: React.FC = () => {
                                   <Pencil size={14} />
                                 </button>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === opp.id ? null : opp.id); }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (openMenu?.id === opp.id) { setOpenMenu(null); return; }
+                                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                    setOpenMenu({ id: opp.id, x: rect.right, y: rect.bottom + 4 });
+                                  }}
                                   className="p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-gray-200 transition-colors">
                                   <MoreVertical size={14} />
                                 </button>
@@ -548,31 +561,7 @@ export const OpportunitiesPage: React.FC = () => {
                                   <Trash2 size={14} />
                                 </button>
 
-                                {/* Stage quick-move dropdown */}
-                                <AnimatePresence>
-                                  {openMenu === opp.id && (
-                                    <motion.div
-                                      initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                                      exit={{ opacity: 0, scale: 0.95 }}
-                                      className="absolute right-0 top-8 z-50 w-52 bg-surface-overlay border border-border rounded-xl shadow-dropdown overflow-hidden"
-                                      onClick={(e) => e.stopPropagation()}>
-                                      <p className="px-3 py-2 text-xs text-gray-500 font-medium uppercase tracking-wide border-b border-border">
-                                        Move to Stage
-                                      </p>
-                                      {STAGES.filter((s) => s.key !== opp.stage).map((s) => (
-                                        <button key={s.key}
-                                          onClick={() => handleStageMove(opp, s.key)}
-                                          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition-colors text-left">
-                                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color }} />
-                                          {s.label}
-                                          {s.key === 'CLOSED_WON' && <CheckCircle2 size={13} className="ml-auto text-green-400" />}
-                                          {s.key === 'CLOSED_LOST' && <XCircle size={13} className="ml-auto text-red-400" />}
-                                        </button>
-                                      ))}
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
+                                {/* Portal dropdown rendered at root — no clipping */}
                               </div>
                             </td>
                           </motion.tr>
@@ -879,6 +868,46 @@ export const OpportunitiesPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* ── Stage quick-move portal popup ── */}
+      <AnimatePresence>
+        {openMenu && (() => {
+          const opp = opps.find((o) => o.id === openMenu.id);
+          if (!opp) return null;
+          // Smart positioning: flip left if too close to right edge
+          const popupW = 208;
+          const left = openMenu.x - popupW < 8 ? openMenu.x : openMenu.x - popupW;
+          const top  = openMenu.y + 200 > window.innerHeight ? openMenu.y - 220 : openMenu.y;
+          return createPortal(
+            <>
+              {/* backdrop */}
+              <div className="fixed inset-0 z-[998]" onClick={() => setOpenMenu(null)} />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                style={{ position: 'fixed', top, left, width: popupW, zIndex: 999 }}
+                className="bg-[#1a1a2e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}>
+                <p className="px-3 py-2.5 text-xs text-gray-500 font-semibold uppercase tracking-wider border-b border-white/10 flex items-center gap-2">
+                  <ArrowRight size={12} /> Move to Stage
+                </p>
+                {STAGES.filter((s) => s.key !== opp.stage).map((s) => (
+                  <button key={s.key}
+                    onClick={() => { handleStageMove(opp, s.key); setOpenMenu(null); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-300 hover:bg-white/5 transition-colors text-left">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                    <span className="flex-1">{s.label}</span>
+                    {s.key === 'CLOSED_WON'  && <CheckCircle2 size={13} className="text-green-400" />}
+                    {s.key === 'CLOSED_LOST' && <XCircle     size={13} className="text-red-400"   />}
+                  </button>
+                ))}
+              </motion.div>
+            </>,
+            document.body
+          );
+        })()}
+      </AnimatePresence>
 
       {/* ── Lost Reason Modal ── */}
       <AnimatePresence>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { preferencesService } from '../services/preferences.service';
@@ -121,27 +121,29 @@ export const SettingsPage: React.FC = () => {
   const { data: companyData } = useQuery({
     queryKey: ['company-settings'],
     queryFn: () => api.get('/settings/company').then((r) => r.data?.data),
-    onSuccess: (d: any) => {
-      if (d) {
-        setCompanyForm({
-          companyName: d.companyName || '',
-          address: d.address || '',
-          city: d.city || '',
-          state: d.state || '',
-          zipCode: d.zipCode || '',
-          country: d.country || 'IN',
-          currency: d.currency || 'INR',
-          taxNumber: d.taxNumber || '',
-          phone: d.phone || '',
-          email: d.email || '',
-          website: d.website || '',
-          financialYearStart: d.financialYearStart || '04',
-          footerAddress: d.footerAddress || '',
-        });
-        if (d.logoUrl) setCompanyLogoPreview(d.logoUrl);
-      }
-    },
-  } as any);
+  });
+
+  useEffect(() => {
+    if (companyData) {
+      const d = companyData as any;
+      setCompanyForm({
+        companyName: d.companyName || '',
+        address: d.address || '',
+        city: d.city || '',
+        state: d.state || '',
+        zipCode: d.zipCode || '',
+        country: d.country || 'IN',
+        currency: d.currency || 'INR',
+        taxNumber: d.taxNumber || '',
+        phone: d.phone || '',
+        email: d.email || '',
+        website: d.website || '',
+        financialYearStart: d.financialYearStart || '04',
+        footerAddress: d.footerAddress || '',
+      });
+      if (d.logoUrl) setCompanyLogoPreview(d.logoUrl);
+    }
+  }, [companyData]);
 
   const handleLogoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

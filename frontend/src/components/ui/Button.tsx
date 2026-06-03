@@ -33,6 +33,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <motion.button
         ref={ref}
+        type={(props as React.ButtonHTMLAttributes<HTMLButtonElement>).type || 'button'}
         whileHover={{ scale: disabled || loading ? 1 : 1.01 }}
         whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
         className={cn(

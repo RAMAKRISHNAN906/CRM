@@ -38,6 +38,15 @@ const splitLeadProductPayload = (data: any) => {
   return payload;
 };
 
+const cleanLeadWriteData = (data: any) => {
+  const cleaned: any = {};
+  for (const [key, value] of Object.entries(data || {})) {
+    if (value === '' || value === null || value === undefined) continue;
+    cleaned[key] = value;
+  }
+  return cleaned;
+};
+
 export const getLeads = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const {
@@ -164,6 +173,11 @@ export const getProductSuggestions = async (req: Request, res: Response, next: N
 export const createLead = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const data: LeadInput & { assigneeId?: string; accountId?: string } = req.body;
+    const ownerId = req.user?.userId || (req.user as any)?.id;
+    if (!ownerId) {
+      sendError(res, 'Invalid user session', 401);
+      return;
+    }
 
     // Duplicate detection: same email within same tenant
     if (data.email) {
@@ -176,13 +190,13 @@ export const createLead = async (req: Request, res: Response, next: NextFunction
       }
     }
 
-    const leadPayload = splitLeadProductPayload(data);
+    const leadPayload = cleanLeadWriteData(splitLeadProductPayload(data));
     const lead = await prisma.lead.create({
       data: {
         ...leadPayload,
         status: toPersistedLeadStatus(data.status),
         tags: data.tags ? JSON.stringify(data.tags) : '[]',
-        ownerId: req.user!.userId,
+        ownerId,
       } as any,
       include: {
         owner: { select: { id: true, name: true, avatar: true } },
@@ -198,12 +212,12 @@ export const createLead = async (req: Request, res: Response, next: NextFunction
         entityId: lead.id,
         entityType: 'Lead',
         data: { ...lead, status: lead.status, source: lead.source },
-        userId: req.user!.userId,
+        userId: ownerId,
       }),
       prisma.activityLog.create({
         data: {
           action: 'LEAD_CREATED', entity: 'Lead', entityId: lead.id,
-          userId: req.user!.userId, details: { name: `${data.firstName} ${data.lastName}` },
+          userId: ownerId, details: { name: `${data.firstName} ${data.lastName}` },
         },
       }),
     ]).catch(() => {});
@@ -218,9 +232,14 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
       where: { id: req.params.id, deletedAt: null },
     });
     if (!existing) { sendError(res, 'Lead not found', 404); return; }
+    const ownerId = req.user?.userId || (req.user as any)?.id;
+    if (!ownerId) {
+      sendError(res, 'Invalid user session', 401);
+      return;
+    }
 
     const data: Partial<LeadInput> & { assigneeId?: string; accountId?: string } = req.body;
-    const leadPayload = splitLeadProductPayload(data);
+    const leadPayload = cleanLeadWriteData(splitLeadProductPayload(data));
 
     const updateData = {
       ...leadPayload,
@@ -242,7 +261,7 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
       prisma.activityLog.create({
         data: {
           action: 'LEAD_UPDATED', entity: 'Lead', entityId: lead.id,
-          userId: req.user!.userId,
+          userId: ownerId,
           changes: data.status !== undefined && coerceLeadStatus(data.status) !== coerceLeadStatus(existing.status)
             ? { status: { from: coerceLeadStatus(existing.status), to: coerceLeadStatus(data.status) } }
             : {},
@@ -258,7 +277,7 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
         entityId: lead.id,
         entityType: 'Lead',
         data: { ...lead, previousStatus: coerceLeadStatus(existing.status) },
-        userId: req.user!.userId,
+        userId: ownerId,
       }));
     }
 

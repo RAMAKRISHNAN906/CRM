@@ -26,10 +26,10 @@ enum Role {
 }
 
 enum LeadStatus {
-  COLD
-  WARM
-  HOT
-  CONVERTED
+  COLD      @map("NEW")
+  WARM      @map("CONTACTED")
+  HOT       @map("QUALIFIED")
+  CONVERTED @map("WON")
   LOST
 }
 

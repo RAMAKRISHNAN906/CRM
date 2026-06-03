@@ -1,8 +1,9 @@
-import React, { useEffect, lazy, Suspense } from 'react';
+import React, { useEffect, lazy, Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { useThemeStore } from './store/themeStore';
+import { useI18nStore } from './i18n';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginPage } from './pages/auth/LoginPage';
@@ -19,6 +20,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { initializeTheme } from './store/themeStore';
 import { BackgroundEffect } from './components/layout/BackgroundEffect';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { CURRENCY_CHANGE_EVENT } from './utils/formatters';
 
 // Lazy-loaded modules
 const AccountsPage     = lazy(() => import('./pages/modules/AccountsPage'));
@@ -70,13 +72,31 @@ const queryClient = new QueryClient({
 
 const App: React.FC = () => {
   const { isDark } = useThemeStore();
+  const { lang, setLang } = useI18nStore();
+  const [, setCurrencyVersion] = useState(0);
 
   useEffect(() => { initializeTheme(); }, []);
+
+  // Apply saved language on startup (RTL direction + html lang attribute)
+  useEffect(() => { setLang(lang); }, []);
+
+  useEffect(() => {
+    const rerender = () => setCurrencyVersion((v) => v + 1);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'crm-default-currency') rerender();
+    };
+    window.addEventListener(CURRENCY_CHANGE_EVENT, rerender);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(CURRENCY_CHANGE_EVENT, rerender);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <BackgroundEffect />
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <ErrorBoundary>
           <Routes>
             <Route path="/login" element={<LoginPage />} />

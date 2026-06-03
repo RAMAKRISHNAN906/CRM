@@ -193,5 +193,5 @@ node dist/server.js
 
 # Frontend
 cd frontend && npm run build
-# Serve dist/ with nginx/caddy
+# Serve dist/ with nginx/caddy and proxy /api/v1 to the backend
 ```

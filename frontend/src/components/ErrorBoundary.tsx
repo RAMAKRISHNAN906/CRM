@@ -1,4 +1,5 @@
 import React from 'react';
+import { getAppUrl } from '../utils/paths';
 
 interface State { error: Error | null }
 
@@ -21,7 +22,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
               {this.state.error.stack}
             </pre>
             <button
-              onClick={() => { this.setState({ error: null }); window.location.href = '/dashboard'; }}
+              onClick={() => { this.setState({ error: null }); window.location.href = getAppUrl('/dashboard'); }}
               className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 text-sm hover:bg-red-500/30 transition-colors"
             >
               Go to Dashboard

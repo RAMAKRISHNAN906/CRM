@@ -1,7 +1,84 @@
 import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
 
-export const formatCurrency = (value: number, currency = 'INR'): string => {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1 }).format(value);
+const DEFAULT_CURRENCY = 'INR';
+const CURRENCY_STORAGE_KEY = 'crm-default-currency';
+export const CURRENCY_CHANGE_EVENT = 'crm:currency-changed';
+
+const CURRENCY_LOCALES: Record<string, string> = {
+  INR: 'en-IN',
+  USD: 'en-US',
+  EUR: 'de-DE',
+  GBP: 'en-GB',
+  AED: 'ar-AE',
+  SAR: 'ar-SA',
+  QAR: 'ar-QA',
+  AUD: 'en-AU',
+  CAD: 'en-CA',
+  SGD: 'en-SG',
+  JPY: 'ja-JP',
+};
+
+export const getCurrentCurrency = (): string => {
+  if (typeof window === 'undefined') return DEFAULT_CURRENCY;
+  const raw = window.localStorage.getItem(CURRENCY_STORAGE_KEY);
+  const normalized = (raw || '').trim().toUpperCase();
+  return normalized || DEFAULT_CURRENCY;
+};
+
+export const setCurrentCurrency = (currency: string): void => {
+  if (typeof window === 'undefined') return;
+  const normalized = (currency || '').trim().toUpperCase() || DEFAULT_CURRENCY;
+  window.localStorage.setItem(CURRENCY_STORAGE_KEY, normalized);
+  window.dispatchEvent(new CustomEvent(CURRENCY_CHANGE_EVENT, { detail: normalized }));
+};
+
+export const getCurrencyLocale = (currency = getCurrentCurrency()): string => {
+  const normalized = currency.trim().toUpperCase();
+  return CURRENCY_LOCALES[normalized] || (typeof navigator !== 'undefined' ? navigator.language : 'en-US');
+};
+
+export const getCurrencySymbol = (currency = getCurrentCurrency()): string => {
+  try {
+    const locale = getCurrencyLocale(currency);
+    const parts = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).formatToParts(0);
+    return parts.find((part) => part.type === 'currency')?.value || currency;
+  } catch {
+    return currency;
+  }
+};
+
+type CurrencyFormatOptions = Intl.NumberFormatOptions & { locale?: string };
+
+export const formatCurrency = (
+  value: number,
+  currency = getCurrentCurrency(),
+  options?: CurrencyFormatOptions,
+): string => {
+  const { locale, ...formatOptions } = options || {};
+  const amount = Number.isFinite(value) ? value : 0;
+  try {
+    return new Intl.NumberFormat(locale || getCurrencyLocale(currency), {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumFractionDigits: 1,
+      ...formatOptions,
+    }).format(amount);
+  } catch {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: DEFAULT_CURRENCY,
+      notation: 'compact',
+      maximumFractionDigits: 1,
+      ...formatOptions,
+    }).format(amount);
+  }
 };
 
 export const formatNumber = (value: number): string => {
@@ -34,16 +111,21 @@ export const truncate = (str: string, length = 50): string => {
 
 export const statusColors: Record<string, string> = {
   // Lead statuses
-  NEW: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  CONTACTED: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  QUALIFIED: 'bg-accent-20 text-accent-muted border-accent-30',
-  WON: 'bg-green-500/20 text-green-400 border-green-500/30',
+  COLD: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  WARM: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  HOT: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  CONVERTED: 'bg-green-500/20 text-green-400 border-green-500/30',
   LOST: 'bg-red-500/20 text-red-400 border-red-500/30',
-  // Deal stages
+  NEW: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  CONTACTED: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  QUALIFIED: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  PROPOSAL: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  NEGOTIATION: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  WON: 'bg-green-500/20 text-green-400 border-green-500/30',
+  DISQUALIFIED: 'bg-red-500/20 text-red-400 border-red-500/30',
+  // Deal stages reuse the same badge colors where names overlap.
   PROSPECTING: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
   QUALIFICATION: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  PROPOSAL: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  NEGOTIATION: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
   CLOSED_WON: 'bg-green-500/20 text-green-400 border-green-500/30',
   CLOSED_LOST: 'bg-red-500/20 text-red-400 border-red-500/30',
   // Task priorities

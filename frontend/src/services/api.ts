@@ -1,7 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/authStore';
+import { getAppUrl } from '../utils/paths';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+export const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -55,7 +56,7 @@ api.interceptors.response.use(
 
       if (!refreshToken) {
         clearAuth();
-        window.location.href = '/login';
+        window.location.href = getAppUrl('/login');
         return Promise.reject(error);
       }
 
@@ -69,7 +70,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         clearAuth();
-        window.location.href = '/login';
+        window.location.href = getAppUrl('/login');
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

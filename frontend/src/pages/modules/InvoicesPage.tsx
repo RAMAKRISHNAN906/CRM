@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, FileText, CheckCircle, Clock, AlertTriangle, Download, FileDown, Trash2, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../../services/api';
+import { API_URL, api } from '../../services/api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import toast from 'react-hot-toast';
+import { formatCurrency, getCurrentCurrency, getCurrencySymbol } from '../../utils/formatters';
 
 type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 
@@ -20,7 +21,8 @@ interface Invoice {
   lineItems?: LineItem[];
 }
 
-const fmt = (n: number) => '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt = (n: number, currency = getCurrentCurrency()) =>
+  formatCurrency(n, currency, { notation: 'standard', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function getAuthToken(): string {
   try {
@@ -61,6 +63,7 @@ const defaultLineItem: LineItem = { description: '', quantity: 1, unitPrice: 0 }
 
 // ── Shared form body (used in both Create and Edit modals) ──────────────────
 interface InvoiceFormBodyProps {
+  currency: string;
   lineItems: LineItem[];
   setLineItems: React.Dispatch<React.SetStateAction<LineItem[]>>;
   invoiceForm: { notes: string; dueDate: string; taxPct: number; discountPct: number };
@@ -73,10 +76,12 @@ interface InvoiceFormBodyProps {
 }
 
 function InvoiceFormBody({
+  currency,
   lineItems, setLineItems, invoiceForm, setInvoiceForm,
   subtotal, discountAmt, taxAmt, total,
   onCancel, onSubmit, isPending, submitLabel,
 }: InvoiceFormBodyProps) {
+  const currencySymbol = getCurrencySymbol(currency);
   const updateItem = (idx: number, field: keyof LineItem, value: any) =>
     setLineItems(items => items.map((item, i) => i === idx ? { ...item, [field]: value } : item));
 
@@ -90,7 +95,7 @@ function InvoiceFormBody({
             <tr>
               <th className="text-xs text-white/40 font-medium text-left pb-1 pl-1 w-[44%]">Description</th>
               <th className="text-xs text-white/40 font-medium text-center pb-1 w-[12%]">Qty</th>
-              <th className="text-xs text-white/40 font-medium text-right pb-1 w-[22%]">Unit Price (₹)</th>
+              <th className="text-xs text-white/40 font-medium text-right pb-1 w-[22%]">Unit Price ({currencySymbol})</th>
               <th className="text-xs text-white/40 font-medium text-right pb-1 w-[18%]">Amount</th>
               <th className="w-[4%]" />
             </tr>
@@ -128,7 +133,7 @@ function InvoiceFormBody({
                     />
                   </td>
                   <td className="pl-2 text-right">
-                    <span className="text-sm font-semibold text-white whitespace-nowrap">{fmt(lineTotal)}</span>
+                    <span className="text-sm font-semibold text-white whitespace-nowrap">{fmt(lineTotal, currency)}</span>
                   </td>
                   <td className="pl-1 text-center">
                     {lineItems.length > 1 && (
@@ -158,7 +163,7 @@ function InvoiceFormBody({
           <label className="block text-xs text-white/50 mb-1.5 font-medium">
             Discount %
             {invoiceForm.discountPct > 0 && (
-              <span className="ml-2 text-red-400 font-semibold">−{fmt(discountAmt)}</span>
+              <span className="ml-2 text-red-400 font-semibold">−{fmt(discountAmt, currency)}</span>
             )}
           </label>
           <div className="relative">
@@ -185,7 +190,7 @@ function InvoiceFormBody({
           <label className="block text-xs text-white/50 mb-1.5 font-medium">
             Tax / GST %
             {invoiceForm.taxPct > 0 && (
-              <span className="ml-2 text-green-400 font-semibold">+{fmt(taxAmt)}</span>
+              <span className="ml-2 text-green-400 font-semibold">+{fmt(taxAmt, currency)}</span>
             )}
           </label>
           <div className="relative">
@@ -220,9 +225,9 @@ function InvoiceFormBody({
       <div className="rounded-xl overflow-hidden border border-white/8 bg-white/4">
         {[
           ...(invoiceForm.discountPct > 0 ? [] : []),
-          { label: 'Subtotal', value: fmt(subtotal), cls: 'text-white/60' },
-          ...(invoiceForm.discountPct > 0 ? [{ label: `Discount (${invoiceForm.discountPct}%)`, value: `−${fmt(discountAmt)}`, cls: 'text-red-400 font-medium' }] : []),
-          ...(invoiceForm.taxPct > 0 ? [{ label: `Tax / GST (${invoiceForm.taxPct}%)`, value: `+${fmt(taxAmt)}`, cls: 'text-green-400 font-medium' }] : []),
+          { label: 'Subtotal', value: fmt(subtotal, currency), cls: 'text-white/60' },
+          ...(invoiceForm.discountPct > 0 ? [{ label: `Discount (${invoiceForm.discountPct}%)`, value: `−${fmt(discountAmt, currency)}`, cls: 'text-red-400 font-medium' }] : []),
+          ...(invoiceForm.taxPct > 0 ? [{ label: `Tax / GST (${invoiceForm.taxPct}%)`, value: `+${fmt(taxAmt, currency)}`, cls: 'text-green-400 font-medium' }] : []),
         ].map(({ label, value, cls }) => (
           <div key={label} className="flex justify-between items-center px-4 py-2.5 text-sm border-b border-white/5">
             <span className="text-white/50">{label}</span>
@@ -232,7 +237,7 @@ function InvoiceFormBody({
         <div className="flex justify-between items-center px-4 py-3 bg-white/5">
           <span className="text-white font-bold text-base">Total</span>
           <motion.span key={total} initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="text-white font-bold text-lg">
-            {fmt(total)}
+            {fmt(total, currency)}
           </motion.span>
         </div>
       </div>
@@ -252,6 +257,7 @@ function InvoiceFormBody({
 // ── Main Page ───────────────────────────────────────────────────────────────
 export default function InvoicesPage() {
   const queryClient = useQueryClient();
+  const defaultCurrency = getCurrentCurrency();
   const [page] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -263,6 +269,7 @@ export default function InvoicesPage() {
   const afterDisc   = subtotal - discountAmt;
   const taxAmt      = (afterDisc * Number(invoiceForm.taxPct)) / 100;
   const total       = afterDisc + taxAmt;
+  const activeCurrency = editingInvoice?.currency || defaultCurrency;
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoices', page],
@@ -316,6 +323,7 @@ export default function InvoicesPage() {
   };
 
   const formProps = {
+    currency: activeCurrency,
     lineItems, setLineItems, invoiceForm, setInvoiceForm,
     subtotal, discountAmt, taxAmt, total,
     onCancel: resetModal,
@@ -359,18 +367,18 @@ export default function InvoicesPage() {
                         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                           <span className={`text-xs px-2 py-0.5 rounded-full border ${status.color}`}>{status.label}</span>
                           <span className="text-white font-semibold min-w-[80px] text-right">
-                            ₹{inv.total.toLocaleString('en-IN')}
+                            {formatCurrency(inv.total, inv.currency || defaultCurrency, { notation: 'standard', maximumFractionDigits: 0 })}
                           </span>
 
                           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            onClick={() => downloadFile(`/api/v1/invoices/${inv.id}/pdf`, `Invoice-${inv.invoiceNumber}.pdf`)}
+                            onClick={() => downloadFile(`${API_URL}/invoices/${inv.id}/pdf`, `Invoice-${inv.invoiceNumber}.pdf`)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors text-xs font-medium"
                             title="Download PDF">
                             <Download size={12} /> PDF
                           </motion.button>
 
                           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            onClick={() => downloadFile(`/api/v1/invoices/${inv.id}/docx`, `Invoice-${inv.invoiceNumber}.docx`)}
+                            onClick={() => downloadFile(`${API_URL}/invoices/${inv.id}/docx`, `Invoice-${inv.invoiceNumber}.docx`)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors text-xs font-medium"
                             title="Download Word">
                             <FileDown size={12} /> Word
@@ -417,7 +425,18 @@ export default function InvoicesPage() {
       <Modal isOpen={!!editingInvoice} onClose={resetModal} title={`Edit ${editingInvoice?.invoiceNumber ?? ''}`}>
         <InvoiceFormBody
           {...formProps}
-          onSubmit={() => updateMutation.mutate({ id: editingInvoice!.id, data: { lineItems, dueDate: invoiceForm.dueDate, subtotal, discount: discountAmt, tax: taxAmt, total } })}
+          onSubmit={() => updateMutation.mutate({
+            id: editingInvoice!.id,
+            data: {
+              lineItems,
+              dueDate: invoiceForm.dueDate,
+              subtotal,
+              discount: discountAmt,
+              tax: taxAmt,
+              total,
+              currency: activeCurrency,
+            },
+          })}
           isPending={updateMutation.isPending}
           submitLabel="Save Changes"
         />
@@ -427,7 +446,15 @@ export default function InvoicesPage() {
       <Modal isOpen={showModal} onClose={resetModal} title="Create Invoice">
         <InvoiceFormBody
           {...formProps}
-          onSubmit={() => createMutation.mutate({ lineItems, dueDate: invoiceForm.dueDate, subtotal, discount: discountAmt, tax: taxAmt, total })}
+          onSubmit={() => createMutation.mutate({
+            lineItems,
+            dueDate: invoiceForm.dueDate,
+            subtotal,
+            discount: discountAmt,
+            tax: taxAmt,
+            total,
+            currency: defaultCurrency,
+          })}
           isPending={createMutation.isPending}
           submitLabel="Create Invoice"
         />
@@ -435,3 +462,4 @@ export default function InvoicesPage() {
     </div>
   );
 }
+

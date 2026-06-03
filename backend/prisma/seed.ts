@@ -54,18 +54,25 @@ async function main() {
 
   // Create sample leads
   const leads = [
-    { firstName: 'Alice', lastName: 'Johnson', email: 'alice@techcorp.com', company: 'TechCorp', status: LeadStatus.HOT, source: LeadSource.WEBSITE, value: 15000 },
-    { firstName: 'Bob', lastName: 'Smith', email: 'bob@startup.io', company: 'Startup.io', status: LeadStatus.WARM, source: LeadSource.REFERRAL, value: 8500 },
-    { firstName: 'Carol', lastName: 'White', email: 'carol@enterprise.com', company: 'Enterprise LLC', status: LeadStatus.HOT, source: LeadSource.EMAIL_CAMPAIGN, value: 45000 },
-    { firstName: 'David', lastName: 'Brown', email: 'david@solutions.net', company: 'Solutions Net', status: LeadStatus.COLD, source: LeadSource.SOCIAL_MEDIA, value: 3200 },
-    { firstName: 'Eva', lastName: 'Martinez', email: 'eva@global.co', company: 'Global Co', status: LeadStatus.HOT, source: LeadSource.TRADE_SHOW, value: 75000 },
+    { firstName: 'Alice', lastName: 'Johnson', email: 'alice@techcorp.com', company: 'TechCorp', status: LeadStatus.HOT, source: LeadSource.WEBSITE, value: 15000, ownerId: admin.id },
+    { firstName: 'Bob', lastName: 'Smith', email: 'bob@startup.io', company: 'Startup.io', status: LeadStatus.WARM, source: LeadSource.REFERRAL, value: 8500, ownerId: user.id, assigneeId: user.id },
+    { firstName: 'Carol', lastName: 'White', email: 'carol@enterprise.com', company: 'Enterprise LLC', status: LeadStatus.HOT, source: LeadSource.EMAIL_CAMPAIGN, value: 45000, ownerId: admin.id },
+    { firstName: 'David', lastName: 'Brown', email: 'david@solutions.net', company: 'Solutions Net', status: LeadStatus.COLD, source: LeadSource.SOCIAL_MEDIA, value: 3200, ownerId: user.id, assigneeId: user.id },
+    { firstName: 'Eva', lastName: 'Martinez', email: 'eva@global.co', company: 'Global Co', status: LeadStatus.HOT, source: LeadSource.TRADE_SHOW, value: 75000, ownerId: admin.id },
   ];
 
   for (const lead of leads) {
     await prisma.lead.create({
       data: {
-        ...lead,
-        owner: { connect: { id: admin.id } },
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        email: lead.email,
+        company: lead.company,
+        status: lead.status,
+        source: lead.source,
+        value: lead.value,
+        owner: { connect: { id: lead.ownerId } },
+        ...(lead.assigneeId ? { assignee: { connect: { id: lead.assigneeId } } } : {}),
       },
     });
   }
@@ -177,18 +184,25 @@ async function main() {
   }
 
   const extraLeads = [
-    { firstName: 'Rahul', lastName: 'Kumar', email: 'rahul@skyline.com', company: 'Skyline Infra', status: LeadStatus.COLD, source: LeadSource.WEBSITE, value: 28000 },
-    { firstName: 'Sneha', lastName: 'Gupta', email: 'sneha@metrobuild.com', company: 'MetroBuild', status: LeadStatus.WARM, source: LeadSource.REFERRAL, value: 54000 },
-    { firstName: 'Vikram', lastName: 'Singh', email: 'vikram@alphacivil.com', company: 'Alpha Civil', status: LeadStatus.HOT, source: LeadSource.COLD_CALL, value: 98000 },
-    { firstName: 'Ananya', lastName: 'Das', email: 'ananya@pioneerhomes.com', company: 'Pioneer Homes', status: LeadStatus.CONVERTED, source: LeadSource.TRADE_SHOW, value: 125000 },
-    { firstName: 'Deepak', lastName: 'Menon', email: 'deepak@urbanedge.com', company: 'UrbanEdge', status: LeadStatus.LOST, source: LeadSource.OTHER, value: 16000 },
+    { firstName: 'Rahul', lastName: 'Kumar', email: 'rahul@skyline.com', company: 'Skyline Infra', status: LeadStatus.COLD, source: LeadSource.WEBSITE, value: 28000, ownerId: user.id, assigneeId: user.id },
+    { firstName: 'Sneha', lastName: 'Gupta', email: 'sneha@metrobuild.com', company: 'MetroBuild', status: LeadStatus.WARM, source: LeadSource.REFERRAL, value: 54000, ownerId: admin.id },
+    { firstName: 'Vikram', lastName: 'Singh', email: 'vikram@alphacivil.com', company: 'Alpha Civil', status: LeadStatus.HOT, source: LeadSource.COLD_CALL, value: 98000, ownerId: user.id, assigneeId: user.id },
+    { firstName: 'Ananya', lastName: 'Das', email: 'ananya@pioneerhomes.com', company: 'Pioneer Homes', status: LeadStatus.CONVERTED, source: LeadSource.TRADE_SHOW, value: 125000, ownerId: admin.id },
+    { firstName: 'Deepak', lastName: 'Menon', email: 'deepak@urbanedge.com', company: 'UrbanEdge', status: LeadStatus.LOST, source: LeadSource.OTHER, value: 16000, ownerId: user.id, assigneeId: user.id },
   ];
 
   for (const lead of extraLeads) {
     await prisma.lead.create({
       data: {
-        ...lead,
-        owner: { connect: { id: admin.id } },
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        email: lead.email,
+        company: lead.company,
+        status: lead.status,
+        source: lead.source,
+        value: lead.value,
+        owner: { connect: { id: lead.ownerId } },
+        ...(lead.assigneeId ? { assignee: { connect: { id: lead.assigneeId } } } : {}),
       },
     });
   }

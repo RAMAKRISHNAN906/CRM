@@ -38,6 +38,8 @@ async function runScheduledSend(): Promise<void> {
   });
 
   for (const festival of due) {
+    // Mark as sent IMMEDIATELY before sending to prevent re-fires if process is slow
+    await prisma.festival.update({ where: { id: festival.id }, data: { isSent: true } });
     console.log(`[FestivalScheduler] Sending "${festival.name}" to ${festival.recipients.length} recipient(s)`);
 
     let emailSentCount = 0, whatsappSentCount = 0, failedCount = 0;
@@ -62,9 +64,6 @@ async function runScheduledSend(): Promise<void> {
       const vars = { name: recipient.name, festival: festival.name, emoji: festival.emoji };
 
       // ── Email ──────────────────────────────────────────────────────────────
-      let emailStatus = 'skipped';
-      let emailError: string | undefined;
-
       if (recipient.email && isEmailConfigured()) {
         try {
           await sendEmail({
@@ -72,47 +71,26 @@ async function runScheduledSend(): Promise<void> {
             subject: renderTemplate(emailSubject, vars),
             body: renderTemplate(emailBody, vars),
           });
-          emailStatus = 'sent';
           emailSentCount++;
         } catch (err: any) {
-          emailStatus = 'failed';
-          emailError = err.message;
           failedCount++;
           console.error(`[FestivalScheduler] Email failed for ${recipient.email}:`, err.message);
         }
       }
 
       // ── WhatsApp ───────────────────────────────────────────────────────────
-      let whatsappStatus = 'skipped';
-      let whatsappError: string | undefined;
-
       if (recipient.phone && isWhatsAppConfigured()) {
         try {
           await sendWhatsApp(recipient.phone, renderTemplate(whatsappBody, vars));
-          whatsappStatus = 'sent';
           whatsappSentCount++;
         } catch (err: any) {
-          whatsappStatus = 'failed';
-          whatsappError = err.message;
           failedCount++;
           console.error(`[FestivalScheduler] WhatsApp failed for ${recipient.phone}:`, err.message);
         }
       }
-
-      // Update recipient status
-      await prisma.festivalRecipient.update({
-        where: { id: recipient.id },
-        data: {
-          emailStatus,
-          whatsappStatus,
-          emailError: emailError ?? null,
-          whatsappError: whatsappError ?? null,
-          sentAt: new Date(),
-        },
-      });
     }
 
-    // Mark festival as sent
+    // Mark festival as sent — MUST happen regardless of per-recipient errors
     await prisma.festival.update({ where: { id: festival.id }, data: { isSent: true } });
 
     // Notify admins

@@ -223,7 +223,7 @@ async function checkLeadFollowUpReminders(now: Date) {
     const leads = await (prisma as any).lead.findMany({
       where: {
         followUpDate: { gte: from, lte: to },
-        status:       { notIn: ['WON', 'LOST'] },
+        status:       { notIn: ['WON', 'CONVERTED', 'LOST'] },
         deletedAt:    null,
       },
       include: {

@@ -82,7 +82,7 @@ EOF
 
 cd backend
 npm ci
-npx prisma generate
+npm run prisma:generate
 npx prisma migrate deploy
 npm run build
 

@@ -26,15 +26,11 @@ enum Role {
 }
 
 enum LeadStatus {
-  NEW
-  CONTACTED
-  QUALIFIED
-  PROPOSAL
-  NEGOTIATION
-  WON
-  LOST
-  DISQUALIFIED
+  COLD
+  WARM
+  HOT
   CONVERTED
+  LOST
 }
 
 enum LeadSource {
@@ -327,7 +323,7 @@ model Lead {
   phone           String?
   company         String?
   jobTitle        String?
-  status          LeadStatus @default(NEW)
+  status          LeadStatus @default(COLD)
   source          LeadSource @default(OTHER)
   value           Float?     @default(0)
   currency        String     @default("INR")
@@ -1033,6 +1029,24 @@ model PaymentTerm {
 }
 
 // ── 5. QUOTES ────────────────────────────────────────────────
+
+model ProductConfig {
+  id          Int      @id @default(autoincrement())
+  category    String   @db.VarChar(120)
+  groupName   String   @map("group_name") @db.VarChar(120)
+  productName String   @map("product_name") @db.VarChar(180)
+  value       Float    @default(0)
+  isActive    Boolean  @map("is_active") @default(true)
+  createdAt   DateTime @map("created_at") @default(now())
+  updatedAt   DateTime @map("updated_at") @updatedAt
+
+  @@unique([category, groupName, productName], map: "uq_product_configs_path")
+  @@index([category])
+  @@index([groupName])
+  @@index([productName])
+  @@index([isActive])
+  @@map("product_configs")
+}
 
 enum QuoteType {
   SQ

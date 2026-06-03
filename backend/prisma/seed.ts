@@ -54,15 +54,20 @@ async function main() {
 
   // Create sample leads
   const leads = [
-    { firstName: 'Alice', lastName: 'Johnson', email: 'alice@techcorp.com', company: 'TechCorp', status: LeadStatus.QUALIFIED, source: LeadSource.WEBSITE, value: 15000 },
-    { firstName: 'Bob', lastName: 'Smith', email: 'bob@startup.io', company: 'Startup.io', status: LeadStatus.CONTACTED, source: LeadSource.REFERRAL, value: 8500 },
-    { firstName: 'Carol', lastName: 'White', email: 'carol@enterprise.com', company: 'Enterprise LLC', status: LeadStatus.PROPOSAL, source: LeadSource.EMAIL_CAMPAIGN, value: 45000 },
-    { firstName: 'David', lastName: 'Brown', email: 'david@solutions.net', company: 'Solutions Net', status: LeadStatus.NEW, source: LeadSource.SOCIAL_MEDIA, value: 3200 },
-    { firstName: 'Eva', lastName: 'Martinez', email: 'eva@global.co', company: 'Global Co', status: LeadStatus.NEGOTIATION, source: LeadSource.TRADE_SHOW, value: 75000 },
+    { firstName: 'Alice', lastName: 'Johnson', email: 'alice@techcorp.com', company: 'TechCorp', status: LeadStatus.HOT, source: LeadSource.WEBSITE, value: 15000 },
+    { firstName: 'Bob', lastName: 'Smith', email: 'bob@startup.io', company: 'Startup.io', status: LeadStatus.WARM, source: LeadSource.REFERRAL, value: 8500 },
+    { firstName: 'Carol', lastName: 'White', email: 'carol@enterprise.com', company: 'Enterprise LLC', status: LeadStatus.HOT, source: LeadSource.EMAIL_CAMPAIGN, value: 45000 },
+    { firstName: 'David', lastName: 'Brown', email: 'david@solutions.net', company: 'Solutions Net', status: LeadStatus.COLD, source: LeadSource.SOCIAL_MEDIA, value: 3200 },
+    { firstName: 'Eva', lastName: 'Martinez', email: 'eva@global.co', company: 'Global Co', status: LeadStatus.HOT, source: LeadSource.TRADE_SHOW, value: 75000 },
   ];
 
   for (const lead of leads) {
-    await prisma.lead.create({ data: { ...lead, userId: admin.id } });
+    await prisma.lead.create({
+      data: {
+        ...lead,
+        owner: { connect: { id: admin.id } },
+      },
+    });
   }
 
   // Create sample contacts
@@ -74,7 +79,12 @@ async function main() {
 
   const createdContacts = [];
   for (const contact of contacts) {
-    const c = await prisma.contact.create({ data: { ...contact, userId: admin.id } });
+    const c = await prisma.contact.create({
+      data: {
+        ...contact,
+        owner: { connect: { id: admin.id } },
+      },
+    });
     createdContacts.push(c);
   }
 
@@ -87,7 +97,12 @@ async function main() {
   ];
 
   for (const deal of deals) {
-    await prisma.deal.create({ data: { ...deal, userId: admin.id } });
+    await prisma.deal.create({
+      data: {
+        ...deal,
+        owner: { connect: { id: admin.id } },
+      },
+    });
   }
 
   // Create sample tasks
@@ -99,7 +114,12 @@ async function main() {
   ];
 
   for (const task of tasks) {
-    await prisma.task.create({ data: { ...task, userId: admin.id } });
+    await prisma.task.create({
+      data: {
+        ...task,
+        owner: { connect: { id: admin.id } },
+      },
+    });
   }
 
   // Activity logs

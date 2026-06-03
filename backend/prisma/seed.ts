@@ -154,6 +154,56 @@ async function main() {
     });
   }
 
+  // Additional sample data for a more realistic dashboard
+  const extraContacts = [
+    { firstName: 'Priya', lastName: 'Nair', email: 'priya@infraworks.com', company: 'InfraWorks', jobTitle: 'Procurement Manager' },
+    { firstName: 'Arjun', lastName: 'Reddy', email: 'arjun@buildmax.com', company: 'BuildMax', jobTitle: 'Project Head' },
+    { firstName: 'Meera', lastName: 'Iyer', email: 'meera@constructpro.com', company: 'ConstructPro', jobTitle: 'Operations Lead' },
+    { firstName: 'Karan', lastName: 'Shah', email: 'karan@civilcore.com', company: 'CivilCore', jobTitle: 'Director' },
+    { firstName: 'Nisha', lastName: 'Patel', email: 'nisha@homeline.in', company: 'HomeLine', jobTitle: 'Sales Manager' },
+  ];
+
+  for (const contact of extraContacts) {
+    await prisma.contact.create({
+      data: {
+        ...contact,
+        owner: { connect: { id: admin.id } },
+      },
+    });
+  }
+
+  const extraLeads = [
+    { firstName: 'Rahul', lastName: 'Kumar', email: 'rahul@skyline.com', company: 'Skyline Infra', status: LeadStatus.COLD, source: LeadSource.WEBSITE, value: 28000 },
+    { firstName: 'Sneha', lastName: 'Gupta', email: 'sneha@metrobuild.com', company: 'MetroBuild', status: LeadStatus.WARM, source: LeadSource.REFERRAL, value: 54000 },
+    { firstName: 'Vikram', lastName: 'Singh', email: 'vikram@alphacivil.com', company: 'Alpha Civil', status: LeadStatus.HOT, source: LeadSource.COLD_CALL, value: 98000 },
+    { firstName: 'Ananya', lastName: 'Das', email: 'ananya@pioneerhomes.com', company: 'Pioneer Homes', status: LeadStatus.CONVERTED, source: LeadSource.TRADE_SHOW, value: 125000 },
+    { firstName: 'Deepak', lastName: 'Menon', email: 'deepak@urbanedge.com', company: 'UrbanEdge', status: LeadStatus.LOST, source: LeadSource.OTHER, value: 16000 },
+  ];
+
+  for (const lead of extraLeads) {
+    await prisma.lead.create({
+      data: {
+        ...lead,
+        owner: { connect: { id: admin.id } },
+      },
+    });
+  }
+
+  const extraDeals = [
+    { title: 'MetroBuild Supply Contract', value: 68000, stage: DealStage.PROPOSAL, probability: 55 },
+    { title: 'Alpha Civil Bulk Order', value: 112000, stage: DealStage.NEGOTIATION, probability: 75 },
+    { title: 'Pioneer Homes Annual Renewal', value: 240000, stage: DealStage.CLOSED_WON, probability: 100 },
+  ];
+
+  for (const deal of extraDeals) {
+    await prisma.deal.create({
+      data: {
+        ...deal,
+        owner: { connect: { id: admin.id } },
+      },
+    });
+  }
+
   // Activity logs
   await prisma.activityLog.create({
     data: { action: 'USER_REGISTERED', entity: 'User', entityId: admin.id, userId: admin.id, details: { email: admin.email } },

@@ -106,26 +106,36 @@ async function main() {
   }
 
   // Seed the product used in the Products page screenshot so it is available immediately.
-  await prisma.productConfig.upsert({
-    where: {
-      category_groupName_productName: {
-        category: 'SSC',
-        groupName: 'SCC',
-        productName: 'Self Compacting Concrete',
+  const productConfigs = [
+    { category: 'SSC', groupName: 'SCC', productName: 'Self Compacting Concrete', value: 150000 },
+    { category: 'RMC', groupName: 'Concrete', productName: 'Ready Mix Concrete', value: 92000 },
+    { category: 'Cement', groupName: 'Building Materials', productName: 'OPC 53 Grade', value: 420 },
+    { category: 'Steel', groupName: 'Reinforcement', productName: 'TMT Bar 12mm', value: 68000 },
+    { category: 'Bricks', groupName: 'Masonry', productName: 'Fly Ash Bricks', value: 7800 },
+  ];
+
+  for (const productConfig of productConfigs) {
+    await prisma.productConfig.upsert({
+      where: {
+        category_groupName_productName: {
+          category: productConfig.category,
+          groupName: productConfig.groupName,
+          productName: productConfig.productName,
+        },
       },
-    },
-    update: {
-      value: 150000,
-      isActive: true,
-    },
-    create: {
-      category: 'SSC',
-      groupName: 'SCC',
-      productName: 'Self Compacting Concrete',
-      value: 150000,
-      isActive: true,
-    },
-  });
+      update: {
+        value: productConfig.value,
+        isActive: true,
+      },
+      create: {
+        category: productConfig.category,
+        groupName: productConfig.groupName,
+        productName: productConfig.productName,
+        value: productConfig.value,
+        isActive: true,
+      },
+    });
+  }
 
   // Create sample tasks
   const tasks = [

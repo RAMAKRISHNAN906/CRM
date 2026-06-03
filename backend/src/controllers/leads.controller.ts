@@ -4,7 +4,39 @@ import { sendSuccess, sendError, sendPaginated } from '../utils/response';
 import { LeadInput } from '../utils/validation';
 import { runAutomation } from '../services/automation.service';
 import { updateLeadScore } from '../services/leadScoring.service';
-import { coerceLeadStatus, toPersistedLeadStatus, toPersistedLeadStatusFilter } from '../utils/leadStatus';
+import { coerceLeadStatus, toPersistedLeadStatusFilter } from '../utils/leadStatus';
+
+let cachedLeadStatusLabels: Set<string> | null = null;
+
+const getLiveLeadStatusLabels = async () => {
+  if (cachedLeadStatusLabels) return cachedLeadStatusLabels;
+  try {
+    const rows = await prisma.$queryRaw<Array<{ enumlabel: string }>>`
+      SELECT e.enumlabel
+      FROM pg_enum e
+      JOIN pg_type t ON t.oid = e.enumtypid
+      WHERE t.typname = 'LeadStatus'
+    `;
+    cachedLeadStatusLabels = new Set(rows.map((row) => String(row.enumlabel).toUpperCase()));
+  } catch {
+    cachedLeadStatusLabels = new Set(['NEW', 'CONTACTED', 'QUALIFIED', 'WON', 'LOST']);
+  }
+  return cachedLeadStatusLabels;
+};
+
+const toLivePersistedLeadStatus = async (value?: unknown, fallback: any = 'COLD') => {
+  const desired = coerceLeadStatus(value, fallback);
+  const liveLabels = await getLiveLeadStatusLabels();
+  const preferredMap: Record<string, string[]> = {
+    COLD: ['COLD', 'NEW'],
+    WARM: ['WARM', 'CONTACTED'],
+    HOT: ['HOT', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION'],
+    CONVERTED: ['CONVERTED', 'WON'],
+    LOST: ['LOST', 'DISQUALIFIED'],
+  };
+  const candidate = preferredMap[desired].find((label) => liveLabels.has(label));
+  return (candidate || desired) as any;
+};
 
 const getSelectedProductsFromCustomFields = (lead: any): any[] => {
   const customFields = lead?.customFields;
@@ -47,7 +79,7 @@ const cleanLeadWriteData = (data: any) => {
   return cleaned;
 };
 
-const buildLeadPrismaData = (data: any, ownerId: string) => {
+const buildLeadPrismaData = async (data: any, ownerId: string) => {
   const base = cleanLeadWriteData(splitLeadProductPayload(data));
   const payload: any = {
     firstName: String(base.firstName || '').trim(),
@@ -56,7 +88,7 @@ const buildLeadPrismaData = (data: any, ownerId: string) => {
     phone: base.phone ? String(base.phone).trim() : undefined,
     company: base.company ? String(base.company).trim() : undefined,
     jobTitle: base.jobTitle ? String(base.jobTitle).trim() : undefined,
-    status: toPersistedLeadStatus(base.status),
+    status: await toLivePersistedLeadStatus(base.status),
     source: base.source || 'OTHER',
     value: Number.isFinite(Number(base.value)) ? Number(base.value) : 0,
     currency: base.currency || 'INR',
@@ -220,7 +252,7 @@ export const createLead = async (req: Request, res: Response, next: NextFunction
       }
     }
 
-    const leadPayload = buildLeadPrismaData(data, ownerId);
+    const leadPayload = await buildLeadPrismaData(data, ownerId);
     const lead = await prisma.lead.create({
       data: leadPayload as any,
       include: {
@@ -264,7 +296,7 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
     }
 
     const data: Partial<LeadInput> & { assigneeId?: string; accountId?: string } = req.body;
-    const leadPayload = buildLeadPrismaData(data, ownerId);
+    const leadPayload = await buildLeadPrismaData(data, ownerId);
     const updateData = { ...leadPayload };
     if (data.status === undefined) delete updateData.status;
     if (data.tags === undefined) delete updateData.tags;
@@ -378,7 +410,7 @@ export const convertToOpportunity = async (req: Request, res: Response, next: Ne
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
-        status: toPersistedLeadStatus('CONVERTED'),
+        status: await toLivePersistedLeadStatus('CONVERTED'),
         convertedAt: now,
         convertedToOpportunityId: opp.id,
       } as any,
@@ -423,7 +455,7 @@ export const convertLead = async (req: Request, res: Response, next: NextFunctio
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
-        status: toPersistedLeadStatus('CONVERTED'),
+        status: await toLivePersistedLeadStatus('CONVERTED'),
         convertedAt: new Date(),
         convertedToContactId: contact.id,
       },

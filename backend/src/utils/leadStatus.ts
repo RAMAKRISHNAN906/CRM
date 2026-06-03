@@ -31,18 +31,18 @@ const LEGACY_LEAD_STATUS_MAP: Record<string, LeadStatus> = {
 };
 
 const PERSISTED_LEAD_STATUS_MAP: Record<LeadStatus, string> = {
-  COLD: 'COLD',
-  WARM: 'WARM',
-  HOT: 'HOT',
-  CONVERTED: 'CONVERTED',
+  COLD: 'NEW',
+  WARM: 'CONTACTED',
+  HOT: 'QUALIFIED',
+  CONVERTED: 'WON',
   LOST: 'LOST',
 };
 
 const LEGACY_LEAD_STATUS_FILTERS: Record<LeadStatus, string[]> = {
-  COLD: ['COLD', 'NEW'],
-  WARM: ['WARM', 'CONTACTED'],
-  HOT: ['HOT', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION'],
-  CONVERTED: ['CONVERTED', 'WON'],
+  COLD: ['NEW'],
+  WARM: ['CONTACTED'],
+  HOT: ['QUALIFIED', 'PROPOSAL', 'NEGOTIATION'],
+  CONVERTED: ['WON', 'CONVERTED'],
   LOST: ['LOST', 'DISQUALIFIED'],
 };
 

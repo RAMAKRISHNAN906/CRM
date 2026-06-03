@@ -2,7 +2,12 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { getAppUrl } from '../utils/paths';
 
-export const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
+const BASE_PATH = import.meta.env.BASE_URL || '/';
+const configuredApiUrl = import.meta.env.VITE_API_URL || '/api/v1';
+export const API_URL =
+  configuredApiUrl.startsWith('/') && BASE_PATH !== '/' && !configuredApiUrl.startsWith(BASE_PATH)
+    ? `${BASE_PATH.replace(/\/$/, '')}${configuredApiUrl}`
+    : configuredApiUrl;
 
 export const api = axios.create({
   baseURL: API_URL,

@@ -47,6 +47,36 @@ const cleanLeadWriteData = (data: any) => {
   return cleaned;
 };
 
+const buildLeadPrismaData = (data: any, ownerId: string) => {
+  const base = cleanLeadWriteData(splitLeadProductPayload(data));
+  const payload: any = {
+    firstName: String(base.firstName || '').trim(),
+    lastName: String(base.lastName || '').trim(),
+    email: base.email ? String(base.email).trim() : undefined,
+    phone: base.phone ? String(base.phone).trim() : undefined,
+    company: base.company ? String(base.company).trim() : undefined,
+    jobTitle: base.jobTitle ? String(base.jobTitle).trim() : undefined,
+    status: toPersistedLeadStatus(base.status),
+    source: base.source || 'OTHER',
+    value: Number.isFinite(Number(base.value)) ? Number(base.value) : 0,
+    currency: base.currency || 'INR',
+    notes: base.notes ? String(base.notes) : undefined,
+    tags: Array.isArray(base.tags) ? JSON.stringify(base.tags) : '[]',
+    ownerId,
+  };
+
+  if (base.country) payload.country = String(base.country);
+  if (base.decisionMakerName) payload.decisionMakerName = String(base.decisionMakerName);
+  if (base.decisionMakerDesignation) payload.decisionMakerDesignation = String(base.decisionMakerDesignation);
+  if (base.whatsappNumber) payload.whatsappNumber = String(base.whatsappNumber);
+  if (base.followUpDate) payload.followUpDate = new Date(base.followUpDate);
+  if (base.assigneeId) payload.assigneeId = String(base.assigneeId);
+  if (base.accountId) payload.accountId = String(base.accountId);
+  if (base.customFields && typeof base.customFields === 'object') payload.customFields = base.customFields;
+
+  return payload;
+};
+
 export const getLeads = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const {
@@ -190,14 +220,9 @@ export const createLead = async (req: Request, res: Response, next: NextFunction
       }
     }
 
-    const leadPayload = cleanLeadWriteData(splitLeadProductPayload(data));
+    const leadPayload = buildLeadPrismaData(data, ownerId);
     const lead = await prisma.lead.create({
-      data: {
-        ...leadPayload,
-        status: toPersistedLeadStatus(data.status),
-        tags: data.tags ? JSON.stringify(data.tags) : '[]',
-        ownerId,
-      } as any,
+      data: leadPayload as any,
       include: {
         owner: { select: { id: true, name: true, avatar: true } },
         assignee: { select: { id: true, name: true, avatar: true } },
@@ -239,13 +264,13 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
     }
 
     const data: Partial<LeadInput> & { assigneeId?: string; accountId?: string } = req.body;
-    const leadPayload = cleanLeadWriteData(splitLeadProductPayload(data));
-
-    const updateData = {
-      ...leadPayload,
-      ...(data.status !== undefined ? { status: toPersistedLeadStatus(data.status) } : {}),
-      tags: data.tags ? JSON.stringify(data.tags) : undefined,
-    };
+    const leadPayload = buildLeadPrismaData(data, ownerId);
+    const updateData = { ...leadPayload };
+    if (data.status === undefined) delete updateData.status;
+    if (data.tags === undefined) delete updateData.tags;
+    if (data.value === undefined) delete updateData.value;
+    if (data.source === undefined) delete updateData.source;
+    if (data.currency === undefined) delete updateData.currency;
 
     const lead = await prisma.lead.update({
       where: { id: req.params.id },

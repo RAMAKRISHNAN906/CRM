@@ -90,17 +90,21 @@ async function main() {
 
   // Create sample deals
   const deals = [
-    { title: 'Enterprise License Deal', value: 85000, stage: DealStage.NEGOTIATION, probability: 70, contactId: createdContacts[0].id },
-    { title: 'SaaS Annual Subscription', value: 24000, stage: DealStage.PROPOSAL, probability: 60, contactId: createdContacts[1].id },
-    { title: 'Implementation Project', value: 45000, stage: DealStage.QUALIFICATION, probability: 40, contactId: createdContacts[2].id },
-    { title: 'Consulting Retainer', value: 36000, stage: DealStage.CLOSED_WON, probability: 100, contactId: createdContacts[0].id },
+    { title: 'Enterprise License Deal', value: 85000, stage: DealStage.NEGOTIATION, probability: 70, contactIndex: 0 },
+    { title: 'SaaS Annual Subscription', value: 24000, stage: DealStage.PROPOSAL, probability: 60, contactIndex: 1 },
+    { title: 'Implementation Project', value: 45000, stage: DealStage.QUALIFICATION, probability: 40, contactIndex: 2 },
+    { title: 'Consulting Retainer', value: 36000, stage: DealStage.CLOSED_WON, probability: 100, contactIndex: 0 },
   ];
 
-  for (const deal of deals) {
+  for (const deal of deals as any[]) {
     await prisma.deal.create({
       data: {
-        ...deal,
+        title: deal.title,
+        value: deal.value,
+        stage: deal.stage,
+        probability: deal.probability,
         owner: { connect: { id: admin.id } },
+        contact: { connect: { id: createdContacts[deal.contactIndex].id } },
       },
     });
   }

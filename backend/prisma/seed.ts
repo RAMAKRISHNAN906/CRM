@@ -190,16 +190,20 @@ async function main() {
   }
 
   const extraDeals = [
-    { title: 'MetroBuild Supply Contract', value: 68000, stage: DealStage.PROPOSAL, probability: 55 },
-    { title: 'Alpha Civil Bulk Order', value: 112000, stage: DealStage.NEGOTIATION, probability: 75 },
-    { title: 'Pioneer Homes Annual Renewal', value: 240000, stage: DealStage.CLOSED_WON, probability: 100 },
+    { title: 'MetroBuild Supply Contract', value: 68000, stage: DealStage.PROPOSAL, probability: 55, contactIndex: 1 },
+    { title: 'Alpha Civil Bulk Order', value: 112000, stage: DealStage.NEGOTIATION, probability: 75, contactIndex: 3 },
+    { title: 'Pioneer Homes Annual Renewal', value: 240000, stage: DealStage.CLOSED_WON, probability: 100, contactIndex: 4 },
   ];
 
-  for (const deal of extraDeals) {
+  for (const deal of extraDeals as any[]) {
     await prisma.deal.create({
       data: {
-        ...deal,
+        title: deal.title,
+        value: deal.value,
+        stage: deal.stage,
+        probability: deal.probability,
         owner: { connect: { id: admin.id } },
+        contact: { connect: { id: createdContacts[deal.contactIndex].id } },
       },
     });
   }

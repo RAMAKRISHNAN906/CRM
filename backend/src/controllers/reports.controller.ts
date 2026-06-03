@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma';
 import { sendSuccess } from '../utils/response';
+import { formatLeadStatusLabel, LEAD_STATUS_FLOW_ORDER, coerceLeadStatus } from '../utils/leadStatus';
 
 // Helper: date range filter
 const dateRange = (from?: string, to?: string) => {
@@ -29,7 +30,17 @@ export const getSalesFunnel = async (req: Request, res: Response, next: NextFunc
       }),
     ]);
 
-    sendSuccess(res, { leadsByStatus, dealsByStage }, 'Sales funnel data retrieved');
+    sendSuccess(res, {
+      leadsByStatus: leadsByStatus
+        .map((entry: any) => ({
+          ...entry,
+          status: coerceLeadStatus(entry.status),
+          label: formatLeadStatusLabel(entry.status),
+          flowOrder: LEAD_STATUS_FLOW_ORDER[coerceLeadStatus(entry.status)],
+        }))
+        .sort((left, right) => left.flowOrder - right.flowOrder),
+      dealsByStage,
+    }, 'Sales funnel data retrieved');
   } catch (error) { next(error); }
 };
 
@@ -138,7 +149,7 @@ export const getConversionRates = async (req: Request, res: Response, next: Next
 
     const [totalLeads, wonLeads, totalDeals, wonDeals] = await Promise.all([
       prisma.lead.count({ where: filter }),
-      prisma.lead.count({ where: { ...filter, status: 'WON' } }),
+      prisma.lead.count({ where: { ...filter, status: { in: ['CONVERTED'] } } }),
       prisma.deal.count({ where: filter }),
       prisma.deal.count({ where: { ...filter, stage: 'CLOSED_WON' } }),
     ]);

@@ -4,6 +4,7 @@ import { sendSuccess, sendError, sendPaginated } from '../utils/response';
 import { LeadInput } from '../utils/validation';
 import { runAutomation } from '../services/automation.service';
 import { updateLeadScore } from '../services/leadScoring.service';
+import { coerceLeadStatus, toPersistedLeadStatus, toPersistedLeadStatusFilter } from '../utils/leadStatus';
 
 export const getLeads = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -33,7 +34,11 @@ export const getLeads = async (req: Request, res: Response, next: NextFunction):
         ],
       }];
     }
-    if (status) where.status = status;
+    if (status) {
+      const statusFilter = toPersistedLeadStatusFilter(status);
+      if (statusFilter?.length === 1) where.status = statusFilter[0];
+      else if (statusFilter?.length) where.status = { in: statusFilter };
+    }
     if (source) where.source = source;
     if (assigneeId) where.assigneeId = assigneeId;
     if (minScore) where.score = { ...where.score, gte: parseInt(minScore) };
@@ -54,7 +59,14 @@ export const getLeads = async (req: Request, res: Response, next: NextFunction):
       prisma.lead.count({ where }),
     ]);
 
-    sendPaginated(res, leads, total, pageNum, limitNum, 'Leads retrieved');
+    sendPaginated(
+      res,
+      leads.map((lead) => ({ ...lead, status: coerceLeadStatus(lead.status) })),
+      total,
+      pageNum,
+      limitNum,
+      'Leads retrieved',
+    );
   } catch (error) { next(error); }
 };
 
@@ -76,7 +88,7 @@ export const getLead = async (req: Request, res: Response, next: NextFunction): 
       },
     });
     if (!lead) { sendError(res, 'Lead not found', 404); return; }
-    sendSuccess(res, lead, 'Lead retrieved');
+    sendSuccess(res, { ...lead, status: coerceLeadStatus(lead.status) }, 'Lead retrieved');
   } catch (error) { next(error); }
 };
 
@@ -98,6 +110,7 @@ export const createLead = async (req: Request, res: Response, next: NextFunction
     const lead = await prisma.lead.create({
       data: {
         ...data,
+        status: toPersistedLeadStatus(data.status),
         tags: data.tags ? JSON.stringify(data.tags) : '[]',
         ownerId: req.user!.userId,
       } as any,
@@ -125,7 +138,7 @@ export const createLead = async (req: Request, res: Response, next: NextFunction
       }),
     ]).catch(() => {});
 
-    sendSuccess(res, lead, 'Lead created', 201);
+    sendSuccess(res, { ...lead, status: coerceLeadStatus(lead.status) }, 'Lead created', 201);
   } catch (error) { next(error); }
 };
 
@@ -138,9 +151,15 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
 
     const data: Partial<LeadInput> & { assigneeId?: string; accountId?: string } = req.body;
 
+    const updateData = {
+      ...data,
+      ...(data.status !== undefined ? { status: toPersistedLeadStatus(data.status) } : {}),
+      tags: data.tags ? JSON.stringify(data.tags) : undefined,
+    };
+
     const lead = await prisma.lead.update({
       where: { id: req.params.id },
-      data: { ...data, tags: data.tags ? JSON.stringify(data.tags) : undefined } as any,
+      data: updateData as any,
       include: {
         owner: { select: { id: true, name: true, avatar: true } },
         assignee: { select: { id: true, name: true, avatar: true } },
@@ -153,8 +172,8 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
         data: {
           action: 'LEAD_UPDATED', entity: 'Lead', entityId: lead.id,
           userId: req.user!.userId,
-          changes: data.status !== existing.status
-            ? { status: { from: existing.status, to: data.status } }
+          changes: data.status !== undefined && coerceLeadStatus(data.status) !== coerceLeadStatus(existing.status)
+            ? { status: { from: coerceLeadStatus(existing.status), to: coerceLeadStatus(data.status) } }
             : {},
           details: {},
         },
@@ -162,19 +181,19 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
       updateLeadScore(lead.id),
     ];
 
-    if (data.status && data.status !== existing.status) {
+    if (data.status !== undefined && coerceLeadStatus(data.status) !== coerceLeadStatus(existing.status)) {
       promises.push(runAutomation({
         trigger: 'LEAD_STATUS_CHANGED',
         entityId: lead.id,
         entityType: 'Lead',
-        data: { ...lead, previousStatus: existing.status },
+        data: { ...lead, previousStatus: coerceLeadStatus(existing.status) },
         userId: req.user!.userId,
       }));
     }
 
     Promise.all(promises).catch(() => {});
 
-    sendSuccess(res, lead, 'Lead updated');
+    sendSuccess(res, { ...lead, status: coerceLeadStatus(lead.status) }, 'Lead updated');
   } catch (error) { next(error); }
 };
 
@@ -244,7 +263,7 @@ export const convertToOpportunity = async (req: Request, res: Response, next: Ne
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
-        status: 'WON',
+        status: toPersistedLeadStatus('CONVERTED'),
         convertedAt: now,
         convertedToOpportunityId: opp.id,
       } as any,
@@ -289,7 +308,7 @@ export const convertLead = async (req: Request, res: Response, next: NextFunctio
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
-        status: 'WON',
+        status: toPersistedLeadStatus('CONVERTED'),
         convertedAt: new Date(),
         convertedToContactId: contact.id,
       },

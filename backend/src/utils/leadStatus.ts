@@ -1,5 +1,3 @@
-import type { LeadStatus as PrismaLeadStatus } from '@prisma/client';
-
 export const LEAD_STATUS_VALUES = ['COLD', 'WARM', 'HOT', 'CONVERTED', 'LOST'] as const;
 
 export type LeadStatus = (typeof LEAD_STATUS_VALUES)[number];
@@ -32,10 +30,10 @@ const LEGACY_LEAD_STATUS_MAP: Record<string, LeadStatus> = {
   DISQUALIFIED: 'LOST',
 };
 
-const PERSISTED_LEAD_STATUS_MAP: Record<LeadStatus, PrismaLeadStatus> = {
-  COLD: 'NEW',
-  WARM: 'CONTACTED',
-  HOT: 'QUALIFIED',
+const PERSISTED_LEAD_STATUS_MAP: Record<LeadStatus, string> = {
+  COLD: 'COLD',
+  WARM: 'WARM',
+  HOT: 'HOT',
   CONVERTED: 'CONVERTED',
   LOST: 'LOST',
 };
@@ -66,9 +64,9 @@ export const formatLeadStatusLabel = (value?: unknown): string => {
   return LEAD_STATUS_LABELS[status];
 };
 
-export const toPersistedLeadStatus = (value?: unknown, fallback: LeadStatus = 'COLD'): PrismaLeadStatus => {
+export const toPersistedLeadStatus = (value?: unknown, fallback: LeadStatus = 'COLD'): LeadStatus => {
   const status = coerceLeadStatus(value, fallback);
-  return PERSISTED_LEAD_STATUS_MAP[status];
+  return PERSISTED_LEAD_STATUS_MAP[status] as LeadStatus;
 };
 
 export const toPersistedLeadStatusFilter = (value?: unknown): string[] | null => {

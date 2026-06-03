@@ -105,6 +105,28 @@ async function main() {
     });
   }
 
+  // Seed the product used in the Products page screenshot so it is available immediately.
+  await prisma.productConfig.upsert({
+    where: {
+      category_groupName_productName: {
+        category: 'SSC',
+        groupName: 'SCC',
+        productName: 'Self Compacting Concrete',
+      },
+    },
+    update: {
+      value: 150000,
+      isActive: true,
+    },
+    create: {
+      category: 'SSC',
+      groupName: 'SCC',
+      productName: 'Self Compacting Concrete',
+      value: 150000,
+      isActive: true,
+    },
+  });
+
   // Create sample tasks
   const tasks = [
     { title: 'Follow up with Alice Johnson', priority: TaskPriority.HIGH, status: TaskStatus.TODO, dueDate: new Date(Date.now() + 86400000) },

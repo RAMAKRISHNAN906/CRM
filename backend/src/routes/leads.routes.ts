@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  getLeads, getLead, createLead, updateLead, deleteLead,
+  getLeads, getLead, getProductSuggestions, createLead, updateLead, deleteLead,
   convertLead, convertToOpportunity, bulkAssign,
 } from '../controllers/leads.controller';
 import { authenticate } from '../middleware/auth.middleware';
@@ -11,6 +11,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', getLeads);
+router.get('/product-suggestions', getProductSuggestions);
 router.get('/:id', getLead);
 router.post('/', validate(leadSchema), createLead);
 router.put('/:id', validate(leadSchema.partial()), updateLead);

@@ -1,4 +1,19 @@
 import { z } from 'zod';
+import { LEAD_STATUS_VALUES, normalizeLeadStatus } from './leadStatus';
+
+const leadStatusSchema = z.preprocess((value) => {
+  if (value === undefined || value === null || value === '') return undefined;
+  return normalizeLeadStatus(value) ?? value;
+}, z.enum(LEAD_STATUS_VALUES).optional());
+
+const leadSelectedProductSchema = z.object({
+  id: z.number().int().positive(),
+  category: z.string().min(1),
+  group: z.string().min(1),
+  name: z.string().min(1),
+  value: z.number().min(0),
+  quantity: z.number().int().min(1).optional().default(1),
+});
 
 export const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -27,12 +42,14 @@ export const leadSchema = z.object({
   phone: z.string().max(20).optional(),
   company: z.string().max(200).optional(),
   jobTitle: z.string().max(200).optional(),
-  status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']).optional(),
+  status: leadStatusSchema,
   source: z.enum(['WEBSITE', 'REFERRAL', 'SOCIAL_MEDIA', 'EMAIL_CAMPAIGN', 'COLD_CALL', 'TRADE_SHOW', 'OTHER']).optional(),
   value: z.number().min(0).optional(),
   currency: z.string().length(3).optional(),
   notes: z.string().max(5000).optional(),
   tags: z.array(z.string()).optional(),
+  productIds: z.array(z.number().int().positive()).optional(),
+  selectedProducts: z.array(leadSelectedProductSchema).optional(),
 });
 
 export const contactSchema = z.object({

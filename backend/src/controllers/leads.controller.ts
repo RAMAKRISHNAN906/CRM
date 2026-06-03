@@ -6,6 +6,38 @@ import { runAutomation } from '../services/automation.service';
 import { updateLeadScore } from '../services/leadScoring.service';
 import { coerceLeadStatus, toPersistedLeadStatus, toPersistedLeadStatusFilter } from '../utils/leadStatus';
 
+const getSelectedProductsFromCustomFields = (lead: any): any[] => {
+  const customFields = lead?.customFields;
+  if (!customFields || typeof customFields !== 'object') return [];
+  const selectedProducts = (customFields as any).selectedProducts;
+  return Array.isArray(selectedProducts) ? selectedProducts : [];
+};
+
+const attachSelectedProducts = (lead: any) => ({
+  ...lead,
+  selectedProducts: getSelectedProductsFromCustomFields(lead),
+});
+
+const splitLeadProductPayload = (data: any) => {
+  const { productIds, selectedProducts, ...rest } = data || {};
+  const customFields =
+    rest.customFields && typeof rest.customFields === 'object'
+      ? { ...rest.customFields }
+      : {};
+
+  if (Array.isArray(selectedProducts)) {
+    (customFields as any).selectedProducts = selectedProducts;
+  } else if (Array.isArray(productIds)) {
+    (customFields as any).productIds = productIds;
+  }
+
+  const payload: any = { ...rest };
+  if (Object.keys(customFields).length > 0) {
+    payload.customFields = customFields;
+  }
+  return payload;
+};
+
 export const getLeads = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const {
@@ -61,7 +93,7 @@ export const getLeads = async (req: Request, res: Response, next: NextFunction):
 
     sendPaginated(
       res,
-      leads.map((lead) => ({ ...lead, status: coerceLeadStatus(lead.status) })),
+      leads.map((lead) => attachSelectedProducts({ ...lead, status: coerceLeadStatus(lead.status) })),
       total,
       pageNum,
       limitNum,
@@ -88,7 +120,44 @@ export const getLead = async (req: Request, res: Response, next: NextFunction): 
       },
     });
     if (!lead) { sendError(res, 'Lead not found', 404); return; }
-    sendSuccess(res, { ...lead, status: coerceLeadStatus(lead.status) }, 'Lead retrieved');
+    sendSuccess(res, attachSelectedProducts({ ...lead, status: coerceLeadStatus(lead.status) }), 'Lead retrieved');
+  } catch (error) { next(error); }
+};
+
+export const getProductSuggestions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const category = String(req.query.category || '').trim().toLowerCase();
+    const group = String(req.query.group || '').trim().toLowerCase();
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit || '5'), 10) || 5, 1), 20);
+
+    const rows = await prisma.productConfig.findMany({
+      where: {
+        isActive: true,
+        ...(category ? { category: { equals: category, mode: 'insensitive' } } : {}),
+        ...(group ? { groupName: { equals: group, mode: 'insensitive' } } : {}),
+      } as any,
+      orderBy: [
+        { category: 'asc' },
+        { groupName: 'asc' },
+        { productName: 'asc' },
+      ],
+      take: limit,
+    });
+
+    sendSuccess(
+      res,
+      rows.map((row) => ({
+        id: row.id,
+        category: row.category,
+        group: row.groupName,
+        name: row.productName,
+        value: Number(row.value || 0),
+        usageCount: 0,
+        averageExpectedAmount: Number(row.value || 0),
+        lastUsedAt: null,
+      })),
+      'Product suggestions retrieved',
+    );
   } catch (error) { next(error); }
 };
 
@@ -107,9 +176,10 @@ export const createLead = async (req: Request, res: Response, next: NextFunction
       }
     }
 
+    const leadPayload = splitLeadProductPayload(data);
     const lead = await prisma.lead.create({
       data: {
-        ...data,
+        ...leadPayload,
         status: toPersistedLeadStatus(data.status),
         tags: data.tags ? JSON.stringify(data.tags) : '[]',
         ownerId: req.user!.userId,
@@ -138,7 +208,7 @@ export const createLead = async (req: Request, res: Response, next: NextFunction
       }),
     ]).catch(() => {});
 
-    sendSuccess(res, { ...lead, status: coerceLeadStatus(lead.status) }, 'Lead created', 201);
+    sendSuccess(res, attachSelectedProducts({ ...lead, status: coerceLeadStatus(lead.status) }), 'Lead created', 201);
   } catch (error) { next(error); }
 };
 
@@ -150,9 +220,10 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
     if (!existing) { sendError(res, 'Lead not found', 404); return; }
 
     const data: Partial<LeadInput> & { assigneeId?: string; accountId?: string } = req.body;
+    const leadPayload = splitLeadProductPayload(data);
 
     const updateData = {
-      ...data,
+      ...leadPayload,
       ...(data.status !== undefined ? { status: toPersistedLeadStatus(data.status) } : {}),
       tags: data.tags ? JSON.stringify(data.tags) : undefined,
     };
@@ -193,7 +264,7 @@ export const updateLead = async (req: Request, res: Response, next: NextFunction
 
     Promise.all(promises).catch(() => {});
 
-    sendSuccess(res, { ...lead, status: coerceLeadStatus(lead.status) }, 'Lead updated');
+    sendSuccess(res, attachSelectedProducts({ ...lead, status: coerceLeadStatus(lead.status) }), 'Lead updated');
   } catch (error) { next(error); }
 };
 

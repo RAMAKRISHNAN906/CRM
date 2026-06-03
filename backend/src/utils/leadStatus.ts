@@ -31,10 +31,10 @@ const LEGACY_LEAD_STATUS_MAP: Record<string, LeadStatus> = {
 };
 
 const PERSISTED_LEAD_STATUS_MAP: Record<LeadStatus, string> = {
-  COLD: 'COLD',
-  WARM: 'WARM',
-  HOT: 'HOT',
-  CONVERTED: 'CONVERTED',
+  COLD: 'NEW',
+  WARM: 'CONTACTED',
+  HOT: 'QUALIFIED',
+  CONVERTED: 'WON',
   LOST: 'LOST',
 };
 

@@ -31,19 +31,19 @@ const LEGACY_LEAD_STATUS_MAP: Record<string, LeadStatus> = {
 };
 
 const PERSISTED_LEAD_STATUS_MAP: Record<LeadStatus, string> = {
-  COLD: 'NEW',
-  WARM: 'CONTACTED',
-  HOT: 'QUALIFIED',
-  CONVERTED: 'WON',
+  COLD: 'COLD',
+  WARM: 'WARM',
+  HOT: 'HOT',
+  CONVERTED: 'CONVERTED',
   LOST: 'LOST',
 };
 
 const LEGACY_LEAD_STATUS_FILTERS: Record<LeadStatus, string[]> = {
-  COLD: ['NEW'],
-  WARM: ['CONTACTED'],
-  HOT: ['QUALIFIED', 'PROPOSAL', 'NEGOTIATION'],
-  CONVERTED: ['WON', 'CONVERTED'],
-  LOST: ['LOST'],
+  COLD: ['COLD', 'NEW'],
+  WARM: ['WARM', 'CONTACTED'],
+  HOT: ['HOT', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION'],
+  CONVERTED: ['CONVERTED', 'WON'],
+  LOST: ['LOST', 'DISQUALIFIED'],
 };
 
 export const normalizeLeadStatus = (value?: unknown): LeadStatus | null => {
